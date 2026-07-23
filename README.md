@@ -2,6 +2,8 @@
 
 수업에서 만든 작은 웹앱, 제작 프롬프트, 완성 웹주소와 GitHub 주소를 한곳에 기록하는 정적 웹앱입니다.
 
+**공개 사이트:** https://dasahee-source.github.io/my-vibe-coding-library/
+
 ## 주요 기능
 
 - 프로젝트 추가·수정·삭제
@@ -39,5 +41,5 @@ npm run dev
 
 GitHub의 **Actions** 메뉴에서 진행 상태와 완성된 주소를 확인할 수 있습니다.
 
-공유 미리보기 주소까지 본인의 GitHub Pages 주소로 맞추려면 `app/layout.tsx`의
-`metadataBase` 값을 발행된 주소로 바꾸세요.
+다른 저장소로 복제해 발행할 때는 `app/layout.tsx`의 `metadataBase` 값을
+새로 발행된 GitHub Pages 주소로 바꾸세요.
