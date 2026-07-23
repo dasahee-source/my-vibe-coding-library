@@ -12,6 +12,9 @@ test("정적 페이지에 프로그램 도서관 정보가 포함된다", async 
   assert.match(html, /만든 프로그램을 한눈에/);
   assert.match(html, /내 프로그램 컬렉션/);
   assert.match(html, /프로그램 실행/);
+  assert.match(html, /games\/dart\//);
+  assert.match(html, /games\/ladder\//);
+  assert.match(html, /반응속도 테스트/);
   assert.match(html, /og\.png/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/);
 });

@@ -119,6 +119,90 @@ const sampleProjects: Project[] = [
     favorite: true,
     createdAt: "2026-07-24",
   },
+  {
+    id: "dart-wheel",
+    title: "다트 돌리기",
+    summary: "원하는 후보를 입력하고 원판을 돌려 한 가지를 무작위로 선택하는 게임",
+    category: "게임",
+    level: "입문",
+    prompt: "후보를 줄마다 입력하면 색상 원판에 자동 배치하고, 버튼을 누르면 회전 애니메이션 뒤 무작위 결과를 보여주는 반응형 웹게임을 만들어줘.",
+    lesson: "배열 입력, 무작위 선택, CSS 회전 애니메이션",
+    demoUrl: "games/dart/",
+    githubUrl: "https://github.com/dasahee-source/my-vibe-coding-library",
+    status: "완성",
+    favorite: false,
+    createdAt: "2026-07-24",
+  },
+  {
+    id: "ladder-game",
+    title: "사다리타기",
+    summary: "2~8명의 참가자와 결과를 입력하고 사다리 경로를 따라 결과를 확인하는 게임",
+    category: "게임",
+    level: "도전",
+    prompt: "2명부터 8명까지 인원수를 정하고 참가자 이름과 결과를 입력할 수 있는 사다리타기 게임을 만들어줘. 사다리는 무작위 생성하고 선택한 경로를 색으로 표시해줘.",
+    lesson: "Canvas 좌표, 무작위 사다리 생성, 경로 추적",
+    demoUrl: "games/ladder/",
+    githubUrl: "https://github.com/dasahee-source/my-vibe-coding-library",
+    status: "완성",
+    favorite: false,
+    createdAt: "2026-07-24",
+  },
+  {
+    id: "rock-paper-scissors",
+    title: "가위바위보",
+    summary: "컴퓨터와 가위바위보를 겨루고 승리·무승부·패배 전적을 확인하는 게임",
+    category: "게임",
+    level: "입문",
+    prompt: "가위, 바위, 보 버튼 중 하나를 고르면 컴퓨터가 무작위로 선택하고 승패를 판정하는 웹게임을 만들어줘. 누적 전적과 초기화 기능도 넣어줘.",
+    lesson: "조건문, 무작위 선택, 점수 상태 관리",
+    demoUrl: "games/rps/",
+    githubUrl: "https://github.com/dasahee-source/my-vibe-coding-library",
+    status: "완성",
+    favorite: false,
+    createdAt: "2026-07-24",
+  },
+  {
+    id: "number-guess",
+    title: "숫자 맞히기",
+    summary: "난이도를 선택하고 높다·낮다 힌트로 숨겨진 숫자를 맞히는 게임",
+    category: "게임",
+    level: "입문",
+    prompt: "1부터 50, 100, 500 중 난이도를 선택하고 숨겨진 숫자를 맞히는 게임을 만들어줘. 높고 낮음 힌트, 시도 횟수, 다시 하기 기능을 넣어줘.",
+    lesson: "입력값 검증, 비교 조건문, 게임 초기화",
+    demoUrl: "games/guess/",
+    githubUrl: "https://github.com/dasahee-source/my-vibe-coding-library",
+    status: "완성",
+    favorite: false,
+    createdAt: "2026-07-24",
+  },
+  {
+    id: "memory-cards",
+    title: "기억력 카드 맞추기",
+    summary: "뒤집힌 카드의 위치를 기억해 같은 그림 두 장을 모두 찾아내는 게임",
+    category: "게임",
+    level: "초급",
+    prompt: "그림 8쌍을 무작위로 섞어 4×4로 보여주는 기억력 카드 게임을 만들어줘. 두 장씩 뒤집고 일치 여부를 확인하며 이동 횟수와 완료 메시지를 표시해줘.",
+    lesson: "배열 섞기, 카드 상태, 지연 처리",
+    demoUrl: "games/memory/",
+    githubUrl: "https://github.com/dasahee-source/my-vibe-coding-library",
+    status: "완성",
+    favorite: false,
+    createdAt: "2026-07-24",
+  },
+  {
+    id: "reaction-test",
+    title: "반응속도 테스트",
+    summary: "화면이 초록색으로 변하는 순간 클릭해 밀리초 단위 반응속도를 측정하는 게임",
+    category: "게임",
+    level: "초급",
+    prompt: "무작위 대기 시간 뒤 화면이 초록색으로 바뀌면 클릭하는 반응속도 테스트를 만들어줘. 너무 일찍 누른 경우 안내하고 최고 기록을 브라우저에 저장해줘.",
+    lesson: "타이머, 시간 측정, 브라우저 저장",
+    demoUrl: "games/reaction/",
+    githubUrl: "https://github.com/dasahee-source/my-vibe-coding-library",
+    status: "완성",
+    favorite: false,
+    createdAt: "2026-07-24",
+  },
 ];
 
 const emptyProject: Omit<Project, "id" | "favorite" | "createdAt"> = {
@@ -160,17 +244,9 @@ export default function Home() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const savedProjects = JSON.parse(saved) as Project[];
-        const featuredProject = sampleProjects.find(
-          (project) => project.id === "portfolio-hub-plan",
-        );
-        const hasFeaturedProject = savedProjects.some(
-          (project) => project.id === "portfolio-hub-plan",
-        );
-        setProjects(
-          featuredProject && !hasFeaturedProject
-            ? [featuredProject, ...savedProjects]
-            : savedProjects,
-        );
+        const savedIds = new Set(savedProjects.map((project) => project.id));
+        const newSamples = sampleProjects.filter((project) => !savedIds.has(project.id));
+        setProjects([...newSamples, ...savedProjects]);
       }
     } catch {
       setMessage("저장된 자료를 읽지 못해 기본 예시를 불러왔어요.");

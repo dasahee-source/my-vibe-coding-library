@@ -1,0 +1,49 @@
+:root { --ink:#263b34; --mint:#55ad93; --paper:#fffdf8; --line:#dbe5df; --coral:#ff7468; }
+* { box-sizing:border-box; }
+body { margin:0; background:#f6f3e9; color:var(--ink); font-family:Arial,"Noto Sans KR",sans-serif; }
+button,input,textarea,select { font:inherit; }
+button { color:inherit; }
+.game-page { min-height:100vh; padding:0 24px 70px; }
+.game-header { width:min(100%,1100px); margin:auto; padding:24px 0; display:flex; justify-content:space-between; font-weight:900; font-size:13px; letter-spacing:.08em; }
+.back-link { color:var(--ink); text-decoration:none; letter-spacing:0; }
+.game-intro { width:min(100%,1100px); margin:35px auto 26px; }
+.game-intro p { color:#32836c; font-size:12px; font-weight:900; letter-spacing:.14em; }
+.game-intro h1 { margin:8px 0; font-family:Georgia,serif; font-size:clamp(42px,8vw,76px); letter-spacing:-.055em; }
+.game-intro > span { color:#64746d; line-height:1.7; }
+.game-panel { width:min(100%,1100px); margin:auto; padding:30px; background:var(--paper); border:1px solid var(--line); border-radius:28px; box-shadow:0 22px 55px rgba(41,65,56,.09); }
+.two-column { display:grid; grid-template-columns:.85fr 1.15fr; gap:34px; align-items:center; }
+.control-card { display:grid; gap:15px; }
+.control-card label { font-weight:900; }.control-card small { color:#78867f; font-weight:500; }
+textarea,input,select { border:1px solid var(--line); border-radius:13px; padding:12px 14px; background:white; color:var(--ink); }
+textarea { resize:vertical; line-height:1.6; }
+.game-button { border:0; border-radius:13px; padding:14px 20px; background:var(--ink); color:white; font-weight:900; cursor:pointer; }
+.game-button:disabled { opacity:.45; cursor:not-allowed; }.game-button.compact { padding:11px 18px; }
+.result-box { padding:17px; background:#eff8f3; border-radius:15px; display:flex; justify-content:space-between; gap:15px; color:#587068; }
+.result-box strong { color:#248166; font-size:22px; }
+.wheel-area { position:relative; min-height:450px; display:grid; place-items:center; }
+.pointer { position:absolute; top:3px; z-index:2; color:var(--ink); font-size:40px; }
+.wheel { position:relative; width:min(390px,78vw); aspect-ratio:1; border:12px solid white; outline:2px solid var(--line); border-radius:50%; box-shadow:0 18px 40px rgba(41,65,56,.18); transition:transform 2.8s cubic-bezier(.12,.62,.12,1); }
+.wheel::after { content:"GO"; position:absolute; inset:39%; display:grid; place-items:center; border-radius:50%; background:var(--paper); font-weight:1000; box-shadow:0 3px 15px #0002; }
+.wheel span { position:absolute; left:50%; top:50%; width:46%; transform-origin:0 0; padding-left:16%; font-size:13px; font-weight:900; white-space:nowrap; }
+.ladder-controls { display:flex; gap:12px; align-items:end; margin-bottom:16px; }.ladder-controls label { display:grid; gap:6px; font-weight:900; }
+.name-grid { display:grid; gap:7px; overflow-x:auto; }.name-grid input { min-width:72px; width:100%; padding:9px; text-align:center; }
+.ladder-canvas-wrap { overflow-x:auto; margin:10px 0; }.ladder-canvas-wrap canvas { width:100%; min-width:620px; height:auto; display:block; }
+.participant-buttons { display:flex; gap:8px; flex-wrap:wrap; margin:20px 0; }.participant-buttons button,.difficulty button { border:1px solid var(--line); background:white; border-radius:999px; padding:9px 14px; font-weight:800; cursor:pointer; }
+.scoreboard { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }.scoreboard span { padding:18px; border-radius:16px; text-align:center; background:#f4f7f3; }.scoreboard strong { display:block; margin-top:7px; font-size:28px; }
+.big-result { min-height:130px; margin:22px 0; padding:28px; display:grid; place-items:center; text-align:center; background:#eff8f3; border-radius:20px; font-size:clamp(20px,4vw,30px); font-weight:900; }
+.choice-buttons { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }.choice-buttons button { min-height:120px; border:1px solid var(--line); border-radius:20px; background:white; font-size:clamp(22px,4vw,35px); font-weight:900; cursor:pointer; }.choice-buttons button:hover { background:#fff0ed; transform:translateY(-3px); }
+.text-button { border:0; background:transparent; color:#438b76; text-decoration:underline; font-weight:800; cursor:pointer; margin-top:18px; }
+.difficulty { display:flex; gap:8px; flex-wrap:wrap; }.difficulty button.active { background:var(--ink); color:white; }
+.guess-row { width:min(520px,100%); margin:auto; display:grid; grid-template-columns:1fr auto; gap:9px; }.guess-row input { font-size:20px; text-align:center; }.tries { text-align:center; color:#708078; }
+.memory-top,.reaction-footer { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px; }.memory-top .text-button { margin:0; }
+.memory-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; max-width:650px; margin:auto; }
+.memory-grid button { aspect-ratio:1; border:0; border-radius:18px; background:var(--ink); color:white; font-size:clamp(24px,5vw,46px); font-weight:900; cursor:pointer; transform:rotateY(0); transition:.2s; }
+.memory-grid button.open { background:#fff1d1; transform:rotateY(180deg); }
+.memory-grid + .result-box { max-width:650px; margin:20px auto 0; }
+.reaction-zone { width:100%; min-height:390px; border:0; border-radius:24px; padding:30px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; background:#e7ece8; cursor:pointer; }
+.reaction-zone strong { font-size:clamp(35px,8vw,70px); }.reaction-zone span { font-size:17px; }.reaction-zone.waiting { background:#ffddd8; }.reaction-zone.ready { background:#60c798; color:#123c2c; }.reaction-zone.done { background:#e9f3ff; }.reaction-zone.early { background:#fff0cf; }
+.reaction-footer { margin:20px 0 0; }.reaction-footer > span { color:#667870; }.reaction-footer strong { color:var(--ink); }
+@media(max-width:720px){
+  .game-page{padding-inline:15px}.game-panel{padding:20px}.two-column{grid-template-columns:1fr}.wheel-area{min-height:350px}.scoreboard span{padding:13px 6px}.choice-buttons{grid-template-columns:1fr}.choice-buttons button{min-height:82px}.memory-grid{gap:7px}.memory-grid button{border-radius:12px}.reaction-zone{min-height:320px}.game-header>span{display:none}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
