@@ -104,6 +104,20 @@ const sampleProjects: Project[] = [
     favorite: false,
     createdAt: "2026-07-23",
   },
+  {
+    id: "portfolio-hub-plan",
+    title: "바이브코딩 작품 허브",
+    summary: "수업에서 만든 모든 프로그램을 한 메인 페이지에 모아 포트폴리오처럼 보여주는 운영 방법",
+    category: "학습",
+    level: "입문",
+    prompt:
+      "내가 수업에서 만든 바이브코딩 프로그램들을 한눈에 볼 수 있는 메인 페이지를 구성해줘. 각 프로그램은 별도 GitHub 저장소와 GitHub Pages 주소를 사용하고, 메인 페이지 카드에는 프로젝트명, 설명, 제작 프롬프트, 웹앱 실행 링크, GitHub 링크를 넣어줘.",
+    lesson: "프로그램별 독립 배포와 메인 포트폴리오 연결",
+    demoUrl: "https://dasahee-source.github.io/my-vibe-coding-library/",
+    githubUrl: "https://github.com/dasahee-source/my-vibe-coding-library",
+    favorite: true,
+    createdAt: "2026-07-24",
+  },
 ];
 
 const emptyProject: Omit<Project, "id" | "favorite" | "createdAt"> = {
@@ -142,7 +156,20 @@ export default function Home() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) setProjects(JSON.parse(saved));
+      if (saved) {
+        const savedProjects = JSON.parse(saved) as Project[];
+        const featuredProject = sampleProjects.find(
+          (project) => project.id === "portfolio-hub-plan",
+        );
+        const hasFeaturedProject = savedProjects.some(
+          (project) => project.id === "portfolio-hub-plan",
+        );
+        setProjects(
+          featuredProject && !hasFeaturedProject
+            ? [featuredProject, ...savedProjects]
+            : savedProjects,
+        );
+      }
     } catch {
       setMessage("저장된 자료를 읽지 못해 기본 예시를 불러왔어요.");
     }
