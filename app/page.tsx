@@ -12,6 +12,7 @@ type Project = {
   lesson: string;
   demoUrl: string;
   githubUrl: string;
+  status?: "완성" | "제작 중" | "아이디어";
   favorite: boolean;
   createdAt: string;
 };
@@ -129,6 +130,7 @@ const emptyProject: Omit<Project, "id" | "favorite" | "createdAt"> = {
   lesson: "",
   demoUrl: "",
   githubUrl: "",
+  status: "제작 중",
 };
 
 function isSafeUrl(value: string) {
@@ -195,6 +197,11 @@ export default function Home() {
     });
   }, [projects, search, category, favoriteOnly]);
 
+  const featuredProject =
+    projects.find((project) => project.favorite && project.demoUrl) ??
+    projects.find((project) => project.demoUrl) ??
+    projects[0];
+
   function openCreate() {
     setEditingId(null);
     setForm(emptyProject);
@@ -212,6 +219,7 @@ export default function Home() {
       lesson: project.lesson,
       demoUrl: project.demoUrl,
       githubUrl: project.githubUrl,
+      status: project.status ?? (project.demoUrl ? "완성" : "아이디어"),
     });
     setDetail(null);
     setModalOpen(true);
@@ -310,44 +318,77 @@ export default function Home() {
             accept="application/json"
             onChange={importData}
           />
-          <button className="button button-primary" onClick={openCreate}>＋ 새 프로젝트</button>
+          <button className="button button-primary" onClick={openCreate}>＋ 새 프로그램</button>
         </nav>
       </header>
 
       <section className="hero" id="top">
         <div>
           <p className="eyebrow">MY VIBE CODING LIBRARY</p>
-          <h1>프롬프트부터 완성작까지,<br /><span>차곡차곡.</span></h1>
+          <h1>만든 프로그램을 한눈에,<br /><span>나만의 서가.</span></h1>
           <p className="hero-copy">
-            수업에서 만든 작은 웹앱과 제작 프롬프트를 한곳에 모아두세요.
-            오늘의 실습이 내일의 포트폴리오가 됩니다.
+            수업에서 완성한 웹앱을 실행하고, 코드와 제작 과정을 다시 꺼내 보세요.
+            작은 실습들이 모여 나만의 바이브코딩 포트폴리오가 됩니다.
           </p>
         </div>
         <div className="hero-note" aria-label="도서관 현황">
           <span className="tape" aria-hidden="true" />
           <strong>{projects.length}</strong>
-          <span>개의 프로젝트를<br />기록했어요</span>
+          <span>개의 프로그램을<br />기록했어요</span>
           <small>JSON 백업으로 집에서도 이어서 작업하세요.</small>
         </div>
       </section>
+
+      {featuredProject && (
+        <section className="featured" aria-labelledby="featured-title">
+          <div className="featured-copy">
+            <p className="section-kicker">FEATURED PROGRAM</p>
+            <span className="status-badge">
+              {featuredProject.status ?? (featuredProject.demoUrl ? "완성" : "아이디어")}
+            </span>
+            <h2 id="featured-title">{featuredProject.title}</h2>
+            <p>{featuredProject.summary}</p>
+            <div className="featured-actions">
+              {featuredProject.demoUrl && (
+                <a className="button button-primary" href={featuredProject.demoUrl} target="_blank" rel="noreferrer">
+                  프로그램 실행 ↗
+                </a>
+              )}
+              {featuredProject.githubUrl && (
+                <a className="button button-quiet" href={featuredProject.githubUrl} target="_blank" rel="noreferrer">
+                  GitHub 코드
+                </a>
+              )}
+              <button className="button button-quiet" onClick={() => setDetail(featuredProject)}>
+                제작 과정 보기
+              </button>
+            </div>
+          </div>
+          <div className="featured-visual" aria-hidden="true">
+            <span className="featured-window-bar">● ● ●</span>
+            <strong>{featuredProject.title}</strong>
+            <small>{featuredProject.category} · {featuredProject.level}</small>
+          </div>
+        </section>
+      )}
 
       <section className="library" aria-labelledby="library-title">
         <div className="section-heading">
           <div>
             <p className="section-kicker">PROJECT SHELF</p>
-            <h2 id="library-title">내 프로젝트 서가</h2>
+            <h2 id="library-title">내 프로그램 컬렉션</h2>
           </div>
-          <p>{filtered.length}개의 프로젝트</p>
+          <p>{filtered.length}개의 프로그램</p>
         </div>
 
         <div className="toolbar">
           <label className="search">
             <span aria-hidden="true">⌕</span>
-            <span className="sr-only">프로젝트 검색</span>
+            <span className="sr-only">프로그램 검색</span>
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="프로젝트, 프롬프트, 배운 점 검색"
+              placeholder="프로그램, 제작 프롬프트, 배운 점 검색"
             />
           </label>
           <button
@@ -380,6 +421,7 @@ export default function Home() {
                 <div className="card-meta">
                   <span>{project.category}</span>
                   <span>{project.level}</span>
+                  <span className="status-chip">{project.status ?? (project.demoUrl ? "완성" : "아이디어")}</span>
                   <button
                     className={`star ${project.favorite ? "active" : ""}`}
                     aria-label={`${project.title} ${project.favorite ? "즐겨찾기 해제" : "즐겨찾기"}`}
@@ -395,12 +437,25 @@ export default function Home() {
                   <strong>{project.lesson}</strong>
                 </div>
                 <div className="card-actions">
-                  <button className="button button-primary" onClick={() => copyPrompt(project.prompt)}>
-                    프롬프트 복사
-                  </button>
-                  <button className="button button-quiet" onClick={() => setDetail(project)}>
-                    자세히
-                  </button>
+                  {project.demoUrl ? (
+                    <a className="button button-primary" href={project.demoUrl} target="_blank" rel="noreferrer">
+                      프로그램 실행
+                    </a>
+                  ) : (
+                    <button className="button button-primary" onClick={() => setDetail(project)}>
+                      제작 과정 보기
+                    </button>
+                  )}
+                  {project.githubUrl && (
+                    <a className="button button-quiet" href={project.githubUrl} target="_blank" rel="noreferrer">
+                      GitHub
+                    </a>
+                  )}
+                  {project.demoUrl && (
+                    <button className="button button-quiet" onClick={() => setDetail(project)}>
+                      상세
+                    </button>
+                  )}
                 </div>
               </article>
             ))}
@@ -409,8 +464,8 @@ export default function Home() {
           <div className="empty">
             <span>✦</span>
             <h3>아직 이 서가가 비어 있어요.</h3>
-            <p>검색어를 바꾸거나 새 프로젝트를 기록해 보세요.</p>
-            <button className="button button-primary" onClick={openCreate}>새 프로젝트 추가</button>
+            <p>검색어를 바꾸거나 새 프로그램을 기록해 보세요.</p>
+            <button className="button button-primary" onClick={openCreate}>새 프로그램 추가</button>
           </div>
         )}
       </section>
@@ -441,14 +496,14 @@ export default function Home() {
             <div className="modal-heading">
               <div>
                 <p className="section-kicker">NEW RECORD</p>
-                <h2 id="project-form-title">{editingId ? "프로젝트 수정" : "새 프로젝트 기록"}</h2>
+                <h2 id="project-form-title">{editingId ? "프로그램 수정" : "새 프로그램 기록"}</h2>
               </div>
               <button className="close" aria-label="닫기" onClick={() => setModalOpen(false)}>×</button>
             </div>
             <form onSubmit={saveProject}>
-              <label>프로젝트명<input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>
+              <label>프로그램명<input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>
               <label>한 줄 설명<input required value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} /></label>
-              <div className="form-row">
+              <div className="form-row form-row-three">
                 <label>카테고리
                   <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
                     {categories.slice(1).map((item) => <option key={item}>{item}</option>)}
@@ -457,6 +512,11 @@ export default function Home() {
                 <label>난이도
                   <select value={form.level} onChange={(e) => setForm({ ...form, level: e.target.value as Project["level"] })}>
                     <option>입문</option><option>초급</option><option>도전</option>
+                  </select>
+                </label>
+                <label>진행 상태
+                  <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as Project["status"] })}>
+                    <option>아이디어</option><option>제작 중</option><option>완성</option>
                   </select>
                 </label>
               </div>
@@ -468,7 +528,7 @@ export default function Home() {
               </div>
               <div className="modal-actions">
                 <button type="button" className="button button-quiet" onClick={() => setModalOpen(false)}>취소</button>
-                <button className="button button-primary">{editingId ? "수정 내용 저장" : "도서관에 추가"}</button>
+                <button className="button button-primary">{editingId ? "수정 내용 저장" : "컬렉션에 추가"}</button>
               </div>
             </form>
           </section>
@@ -486,12 +546,18 @@ export default function Home() {
           >
             <div className="modal-heading">
               <div>
-                <p className="section-kicker">{detail.category} · {detail.level}</p>
+                <p className="section-kicker">
+                  {detail.category} · {detail.level} · {detail.status ?? (detail.demoUrl ? "완성" : "아이디어")}
+                </p>
                 <h2 id="detail-title">{detail.title}</h2>
               </div>
               <button className="close" aria-label="닫기" onClick={() => setDetail(null)}>×</button>
             </div>
             <p className="detail-summary">{detail.summary}</p>
+            <div className="program-links">
+              {detail.demoUrl && <a className="button button-primary" href={detail.demoUrl} target="_blank" rel="noreferrer">프로그램 실행 ↗</a>}
+              {detail.githubUrl && <a className="button button-quiet" href={detail.githubUrl} target="_blank" rel="noreferrer">GitHub 코드</a>}
+            </div>
             <div className="prompt-box">
               <span>제작 프롬프트</span>
               <p>{detail.prompt}</p>
@@ -499,8 +565,6 @@ export default function Home() {
             </div>
             <div className="detail-lesson"><span>이번에 배운 것</span><strong>{detail.lesson}</strong></div>
             <div className="link-actions">
-              {detail.demoUrl && <a className="button button-primary" href={detail.demoUrl} target="_blank" rel="noreferrer">웹앱 실행</a>}
-              {detail.githubUrl && <a className="button button-quiet" href={detail.githubUrl} target="_blank" rel="noreferrer">GitHub 보기</a>}
               {!detail.demoUrl && !detail.githubUrl && <p>완성 웹주소와 GitHub 주소는 수정 화면에서 추가할 수 있어요.</p>}
             </div>
             <div className="modal-actions split">
