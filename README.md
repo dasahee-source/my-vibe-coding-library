@@ -38,3 +38,6 @@ npm run dev
 5. `main` 브랜치에 파일을 올리면 자동으로 발행됩니다.
 
 GitHub의 **Actions** 메뉴에서 진행 상태와 완성된 주소를 확인할 수 있습니다.
+
+공유 미리보기 주소까지 본인의 GitHub Pages 주소로 맞추려면 `app/layout.tsx`의
+`metadataBase` 값을 발행된 주소로 바꾸세요.

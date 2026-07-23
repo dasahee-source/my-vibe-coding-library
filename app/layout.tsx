@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://example.com"),
+  metadataBase: new URL("https://my-vibe-coding-library.dasahee.chatgpt.site"),
   title: "나의 바이브코딩 도서관",
   description: "프롬프트부터 완성작까지, 내가 만든 바이브코딩 프로젝트를 차곡차곡 기록하세요.",
   openGraph: {
