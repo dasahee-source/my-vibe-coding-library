@@ -175,24 +175,75 @@ export function LadderGame() {
 }
 
 export function RpsGame() {
-  const choices = ["✊ 바위", "✌️ 가위", "✋ 보"];
+  const choices = [
+    { icon: "✊", name: "바위" },
+    { icon: "✌️", name: "가위" },
+    { icon: "✋", name: "보" },
+  ];
   const [score, setScore] = useState({ win: 0, draw: 0, lose: 0 });
-  const [round, setRound] = useState("하나를 선택하세요!");
+  const [preview, setPreview] = useState(0);
+  const [mine, setMine] = useState<number | null>(null);
+  const [computer, setComputer] = useState<number | null>(null);
+  const [outcome, setOutcome] = useState<"win" | "draw" | "lose" | null>(null);
 
-  function play(mine: number) {
-    const computer = Math.floor(Math.random() * 3);
-    const outcome = mine === computer ? "draw" : (mine - computer + 3) % 3 === 2 ? "win" : "lose";
-    const label = outcome === "win" ? "승리!" : outcome === "draw" ? "무승부" : "패배";
-    setScore((old) => ({ ...old, [outcome]: old[outcome] + 1 }));
-    setRound(`나: ${choices[mine]} · 컴퓨터: ${choices[computer]} — ${label}`);
+  useEffect(() => {
+    if (computer !== null) return;
+    const interval = window.setInterval(() => setPreview((value) => (value + 1) % choices.length), 170);
+    return () => window.clearInterval(interval);
+  }, [computer, choices.length]);
+
+  function play(myChoice: number) {
+    const computerChoice = Math.floor(Math.random() * 3);
+    const result = myChoice === computerChoice ? "draw" : (myChoice - computerChoice + 3) % 3 === 2 ? "win" : "lose";
+    setMine(myChoice);
+    setComputer(computerChoice);
+    setOutcome(result);
+    setScore((old) => ({ ...old, [result]: old[result] + 1 }));
+  }
+
+  function resetRound() {
+    setMine(null);
+    setComputer(null);
+    setOutcome(null);
   }
 
   return (
     <GameShell title="가위바위보" subtitle="컴퓨터와 겨루고 나의 승률을 확인해보세요.">
       <div className="scoreboard"><span>승리 <strong>{score.win}</strong></span><span>무승부 <strong>{score.draw}</strong></span><span>패배 <strong>{score.lose}</strong></span></div>
-      <div className="big-result">{round}</div>
-      <div className="choice-buttons">{choices.map((choice, i) => <button key={choice} onClick={() => play(i)}>{choice}</button>)}</div>
-      <button className="text-button" onClick={() => { setScore({ win: 0, draw: 0, lose: 0 }); setRound("하나를 선택하세요!"); }}>전적 초기화</button>
+      <div className={`rps-arena ${outcome ?? "waiting"}`}>
+        {mine === null ? (
+          <div className="computer-pick moving">
+            <span className="pick-label">COMPUTER</span>
+            <strong key={preview}>{choices[preview].icon}</strong>
+            <p>컴퓨터가 선택 중이에요</p>
+          </div>
+        ) : (
+          <>
+            <div className={`pick-card mine ${outcome === "win" ? "winner" : ""}`}>
+              <span className="pick-label">나의 선택</span>
+              <strong>{choices[mine].icon}</strong>
+              <b>{choices[mine].name}</b>
+            </div>
+            <div className="versus">
+              <strong>{outcome === "win" ? "승리!" : outcome === "draw" ? "무승부" : "패배"}</strong>
+              <span>VS</span>
+            </div>
+            <div className={`pick-card computer ${outcome === "lose" ? "winner" : ""}`}>
+              <span className="pick-label">컴퓨터</span>
+              <strong>{choices[computer!].icon}</strong>
+              <b>{choices[computer!].name}</b>
+            </div>
+          </>
+        )}
+      </div>
+      <p className="rps-guide">{mine === null ? "아래에서 나의 선택을 눌러주세요." : "다른 손을 누르면 바로 다음 판이 시작됩니다."}</p>
+      <div className="choice-buttons">
+        {choices.map((choice, i) => <button className={mine === i ? "selected" : ""} key={choice.name} onClick={() => play(i)}><span>{choice.icon}</span>{choice.name}</button>)}
+      </div>
+      <div className="rps-tools">
+        {mine !== null && <button className="text-button" onClick={resetRound}>선택 화면으로</button>}
+        <button className="text-button" onClick={() => { setScore({ win: 0, draw: 0, lose: 0 }); resetRound(); }}>전적 초기화</button>
+      </div>
     </GameShell>
   );
 }
