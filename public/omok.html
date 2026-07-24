@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오목</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+:root{
+  --paper: #EDE3CC;
+  --paper-deep: #E4D8B8;
+  --wood-light: #D8B876;
+  --wood-dark: #A9793F;
+  --line: #6B4F2A;
+  --ink: #2B2420;
+  --ink-soft: #6b5f4f;
+  --jade: #1F4D3D;
+  --jade-light: #2F6E56;
+  --black-stone-a: #4a4a4a;
+  --black-stone-b: #050505;
+  --white-stone-a: #ffffff;
+  --white-stone-b: #d8d2c2;
+}
+
+*{ box-sizing: border-box; }
+
+body{
+  margin:0;
+  min-height:100vh;
+  background: var(--paper);
+  background-image:
+    radial-gradient(circle at 20% 15%, rgba(169,121,63,0.10), transparent 40%),
+    radial-gradient(circle at 85% 80%, rgba(169,121,63,0.10), transparent 40%);
+  font-family: 'Noto Sans KR', sans-serif;
+  color: var(--ink);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding: 32px 16px 48px;
+}
+
+.eyebrow{
+  font-size:12px;
+  letter-spacing: 0.25em;
+  color: var(--jade);
+  font-weight:700;
+  margin-bottom: 6px;
+}
+
+h1{
+  font-family:'Noto Serif KR', serif;
+  font-weight:900;
+  font-size: 48px;
+  margin: 0 0 4px;
+  letter-spacing: 0.04em;
+}
+
+.subtitle{
+  color: var(--ink-soft);
+  font-size:14px;
+  margin-bottom: 24px;
+}
+
+.controls{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  align-items:center;
+  justify-content:center;
+  margin-bottom: 20px;
+}
+
+.segment{
+  display:flex;
+  background: var(--paper-deep);
+  border: 1px solid rgba(107,79,42,0.35);
+  border-radius: 999px;
+  padding: 3px;
+  gap:2px;
+}
+
+.segment button{
+  border:none;
+  background:transparent;
+  font-family:'Noto Sans KR', sans-serif;
+  font-size:13px;
+  font-weight:700;
+  color: var(--ink-soft);
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor:pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.segment button.active{
+  background: var(--jade);
+  color: #fff;
+}
+
+.segment button:focus-visible{
+  outline: 2px solid var(--jade);
+  outline-offset: 2px;
+}
+
+.status-bar{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:15px;
+  font-weight:700;
+  margin-bottom:16px;
+  min-height: 24px;
+}
+
+.status-stone{
+  width:18px;height:18px;border-radius:50%;
+  box-shadow: inset -2px -2px 3px rgba(0,0,0,0.25), 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.status-stone.black{ background: radial-gradient(circle at 35% 30%, var(--black-stone-a), var(--black-stone-b)); }
+.status-stone.white{ background: radial-gradient(circle at 35% 30%, var(--white-stone-a), var(--white-stone-b)); border:1px solid rgba(0,0,0,0.15); }
+
+.board-frame{
+  background: linear-gradient(135deg, var(--wood-light), var(--wood-dark));
+  border-radius: 10px;
+  padding: 22px;
+  box-shadow: 0 18px 40px rgba(43,36,32,0.35), inset 0 0 0 1px rgba(255,255,255,0.15);
+}
+
+.board{
+  position: relative;
+  width: min(86vw, 560px);
+  height: min(86vw, 560px);
+  background:
+    repeating-linear-gradient(0deg, transparent 0, transparent calc(100%/14 - 1px), var(--line) calc(100%/14 - 1px), var(--line) calc(100%/14)),
+    repeating-linear-gradient(90deg, transparent 0, transparent calc(100%/14 - 1px), var(--line) calc(100%/14 - 1px), var(--line) calc(100%/14));
+  background-color: rgba(0,0,0,0.02);
+}
+
+.star{
+  position:absolute;
+  width:7px;height:7px;
+  border-radius:50%;
+  background: var(--line);
+  transform: translate(-50%,-50%);
+}
+
+.point{
+  position:absolute;
+  width: calc(100%/14);
+  height: calc(100%/14);
+  transform: translate(-50%,-50%);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+}
+
+.point:hover .ghost{
+  opacity: 0.35;
+}
+
+.ghost{
+  width:78%;
+  height:78%;
+  border-radius:50%;
+  opacity:0;
+  background: rgba(30,30,30,0.6);
+  transition: opacity 0.12s;
+}
+
+.stone{
+  width:82%;
+  height:82%;
+  border-radius:50%;
+  animation: place 0.16s ease-out;
+}
+
+.stone.black{ background: radial-gradient(circle at 32% 28%, var(--black-stone-a), var(--black-stone-b)); box-shadow: 0 2px 3px rgba(0,0,0,0.5), inset -2px -2px 4px rgba(0,0,0,0.4); }
+.stone.white{ background: radial-gradient(circle at 32% 28%, var(--white-stone-a), var(--white-stone-b)); box-shadow: 0 2px 3px rgba(0,0,0,0.35); border: 1px solid rgba(0,0,0,0.1); }
+
+.stone.win{
+  box-shadow: 0 0 0 3px var(--jade-light), 0 2px 4px rgba(0,0,0,0.4);
+}
+
+@keyframes place{
+  from{ transform: scale(0.3); opacity:0.4; }
+  to{ transform: scale(1); opacity:1; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .stone{ animation:none; }
+}
+
+.bottom-row{
+  margin-top: 20px;
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+
+.btn{
+  border:none;
+  background: var(--jade);
+  color:#fff;
+  font-family:'Noto Sans KR', sans-serif;
+  font-weight:700;
+  font-size:14px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  cursor:pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.btn:hover{ background: var(--jade-light); }
+.btn:active{ transform: scale(0.97); }
+.btn:focus-visible{ outline: 2px solid var(--ink); outline-offset:2px; }
+
+.thinking{
+  color: var(--ink-soft);
+  font-size:13px;
+  font-weight:500;
+}
+</style>
+</head>
+<body>
+
+<div class="eyebrow">전통 대국</div>
+<h1>오목</h1>
+<div class="subtitle">다섯 개를 먼저 이으면 승리합니다</div>
+
+<div class="controls">
+  <div class="segment" id="modeSeg">
+    <button data-mode="ai" class="active">AI 대전</button>
+    <button data-mode="pvp">2인 대전</button>
+  </div>
+  <div class="segment" id="diffSeg">
+    <button data-diff="easy" class="active">하수</button>
+    <button data-diff="medium">중수</button>
+    <button data-diff="hard">고수</button>
+  </div>
+</div>
+
+<div class="status-bar" id="statusBar">
+  <div class="status-stone black"></div>
+  <span id="statusText">흑돌 차례입니다</span>
+</div>
+
+<div class="board-frame">
+  <div class="board" id="board"></div>
+</div>
+
+<div class="bottom-row">
+  <button class="btn" id="restartBtn">다시 시작</button>
+  <span class="thinking" id="thinkingText"></span>
+</div>
+
+<script>
+const SIZE = 15;
+const EMPTY = 0, BLACK = 1, WHITE = 2;
+
+let board, current, gameOver, mode, difficulty, winningCells;
+
+const boardEl = document.getElementById('board');
+const statusBar = document.getElementById('statusBar');
+const statusText = document.getElementById('statusText');
+const thinkingText = document.getElementById('thinkingText');
+const modeSeg = document.getElementById('modeSeg');
+const diffSeg = document.getElementById('diffSeg');
+
+mode = 'ai';
+difficulty = 'easy';
+
+modeSeg.addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  [...modeSeg.children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  mode = btn.dataset.mode;
+  diffSeg.style.display = mode === 'ai' ? 'flex' : 'none';
+  init();
+});
+
+diffSeg.addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  [...diffSeg.children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  difficulty = btn.dataset.diff;
+  init();
+});
+
+document.getElementById('restartBtn').addEventListener('click', init);
+
+function init(){
+  board = Array.from({length: SIZE}, () => Array(SIZE).fill(EMPTY));
+  current = BLACK;
+  gameOver = false;
+  winningCells = null;
+  thinkingText.textContent = '';
+  renderBoard();
+  updateStatus();
+}
+
+function renderBoard(){
+  boardEl.innerHTML = '';
+  const starPositions = [3,7,11];
+  starPositions.forEach(r => starPositions.forEach(c => {
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.left = (c/14*100) + '%';
+    s.style.top = (r/14*100) + '%';
+    boardEl.appendChild(s);
+  }));
+
+  for(let r=0;r<SIZE;r++){
+    for(let c=0;c<SIZE;c++){
+      const p = document.createElement('div');
+      p.className = 'point';
+      p.style.left = (c/14*100) + '%';
+      p.style.top = (r/14*100) + '%';
+      p.dataset.r = r;
+      p.dataset.c = c;
+
+      if(board[r][c] === EMPTY){
+        const ghost = document.createElement('div');
+        ghost.className = 'ghost';
+        p.appendChild(ghost);
+        p.addEventListener('click', () => onPointClick(r,c));
+      } else {
+        const stone = document.createElement('div');
+        stone.className = 'stone ' + (board[r][c] === BLACK ? 'black' : 'white');
+        if(winningCells && winningCells.some(([wr,wc]) => wr===r && wc===c)){
+          stone.classList.add('win');
+        }
+        p.appendChild(stone);
+      }
+      boardEl.appendChild(p);
+    }
+  }
+}
+
+function onPointClick(r,c){
+  if(gameOver || board[r][c] !== EMPTY) return;
+  if(mode === 'ai' && current === WHITE) return;
+  playMove(r,c,current);
+}
+
+function playMove(r,c,player){
+  board[r][c] = player;
+  const win = checkWin(board,r,c,player);
+  renderHighlight(win);
+  renderBoard();
+  if(win){
+    gameOver = true;
+    winningCells = win;
+    renderBoard();
+    statusText.textContent = (player===BLACK?'흑돌':'백돌') + ' 승리!';
+    thinkingText.textContent = '';
+    return;
+  }
+  if(isBoardFull()){
+    gameOver = true;
+    statusText.textContent = '무승부입니다';
+    return;
+  }
+  current = (player === BLACK) ? WHITE : BLACK;
+  updateStatus();
+
+  if(mode === 'ai' && current === WHITE && !gameOver){
+    thinkingText.textContent = 'AI가 생각 중...';
+    setTimeout(aiMove, 260);
+  }
+}
+
+function renderHighlight(win){
+  winningCells = win || winningCells;
+}
+
+function updateStatus(){
+  const stoneEl = statusBar.querySelector('.status-stone');
+  stoneEl.className = 'status-stone ' + (current===BLACK ? 'black' : 'white');
+  statusText.textContent = (current===BLACK ? '흑돌' : '백돌') + ' 차례입니다';
+}
+
+function isBoardFull(){
+  return board.every(row => row.every(v => v !== EMPTY));
+}
+
+function checkWin(bd,r,c,player){
+  const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+  for(const [dr,dc] of dirs){
+    const cells = [[r,c]];
+    let rr=r+dr, cc=c+dc;
+    while(rr>=0&&rr<SIZE&&cc>=0&&cc<SIZE&&bd[rr][cc]===player){
+      cells.push([rr,cc]); rr+=dr; cc+=dc;
+    }
+    rr=r-dr; cc=c-dc;
+    while(rr>=0&&rr<SIZE&&cc>=0&&cc<SIZE&&bd[rr][cc]===player){
+      cells.push([rr,cc]); rr-=dr; cc-=dc;
+    }
+    if(cells.length>=5) return cells;
+  }
+  return null;
+}
+
+// ---------------- AI ----------------
+
+const DIFF_SETTINGS = {
+  easy:   { depth: 1, blockProb: 0.4, randomProb: 0.35 },
+  medium: { depth: 2, blockProb: 0.85, randomProb: 0.1 },
+  hard:   { depth: 3, blockProb: 1.0, randomProb: 0.0 }
+};
+
+function getCandidateMoves(bd, radius=2){
+  const set = new Set();
+  let any = false;
+  for(let r=0;r<SIZE;r++){
+    for(let c=0;c<SIZE;c++){
+      if(bd[r][c]!==EMPTY){
+        any = true;
+        for(let dr=-radius;dr<=radius;dr++){
+          for(let dc=-radius;dc<=radius;dc++){
+            const rr=r+dr, cc=c+dc;
+            if(rr>=0&&rr<SIZE&&cc>=0&&cc<SIZE&&bd[rr][cc]===EMPTY){
+              set.add(rr*SIZE+cc);
+            }
+          }
+        }
+      }
+    }
+  }
+  if(!any) return [[7,7]];
+  return [...set].map(v => [Math.floor(v/SIZE), v%SIZE]);
+}
+
+function findImmediateWin(bd, player){
+  const candidates = getCandidateMoves(bd);
+  for(const [r,c] of candidates){
+    bd[r][c] = player;
+    const win = checkWin(bd,r,c,player);
+    bd[r][c] = EMPTY;
+    if(win) return [r,c];
+  }
+  return null;
+}
+
+function scorePoint(bd, r, c, player){
+  bd[r][c] = player;
+  const s = evaluateBoard(bd, player);
+  bd[r][c] = EMPTY;
+  return s;
+}
+
+function orderCandidates(bd, candidates, player){
+  const opp = player===BLACK?WHITE:BLACK;
+  return candidates
+    .map(([r,c]) => {
+      const selfScore = scorePoint(bd,r,c,player);
+      const oppScore = scorePoint(bd,r,c,opp);
+      return [r,c,Math.max(selfScore,oppScore)];
+    })
+    .sort((a,b) => b[2]-a[2]);
+}
+
+function lineToString(cells, bd){
+  return cells.map(([r,c]) => {
+    if(r<0||r>=SIZE||c<0||c>=SIZE) return '#';
+    if(bd[r][c]===EMPTY) return '.';
+    return bd[r][c]===BLACK ? 'B' : 'W';
+  }).join('');
+}
+
+function getAllLines(bd){
+  const lines = [];
+  for(let r=0;r<SIZE;r++){
+    const cells=[]; for(let c=0;c<SIZE;c++) cells.push([r,c]);
+    lines.push(cells);
+  }
+  for(let c=0;c<SIZE;c++){
+    const cells=[]; for(let r=0;r<SIZE;r++) cells.push([r,c]);
+    lines.push(cells);
+  }
+  for(let k=-SIZE+1;k<SIZE;k++){
+    const cells=[];
+    for(let r=0;r<SIZE;r++){ const c=r-k; if(c>=0&&c<SIZE) cells.push([r,c]); }
+    if(cells.length>=5) lines.push(cells);
+  }
+  for(let k=0;k<2*SIZE-1;k++){
+    const cells=[];
+    for(let r=0;r<SIZE;r++){ const c=k-r; if(c>=0&&c<SIZE) cells.push([r,c]); }
+    if(cells.length>=5) lines.push(cells);
+  }
+  return lines;
+}
+
+const ALL_LINES = getAllLines();
+
+const PATTERNS = [
+  { re: /BBBBB/g, score: 10000000, player: BLACK },
+  { re: /WWWWW/g, score: 10000000, player: WHITE },
+  { re: /\.BBBB\./g, score: 500000, player: BLACK },
+  { re: /\.WWWW\./g, score: 500000, player: WHITE },
+  { re: /(?=(\.BBBB[#\.]|[#\.]BBBB\.))/g, score: 50000, player: BLACK },
+  { re: /(?=(\.WWWW[#\.]|[#\.]WWWW\.))/g, score: 50000, player: WHITE },
+  { re: /(?=(\.BBB\.))/g, score: 5000, player: BLACK },
+  { re: /(?=(\.WWW\.))/g, score: 5000, player: WHITE },
+  { re: /(?=(\.BBB[#\.]|[#\.]BBB\.))/g, score: 700, player: BLACK },
+  { re: /(?=(\.WWW[#\.]|[#\.]WWW\.))/g, score: 700, player: WHITE },
+  { re: /(?=(\.BB\.))/g, score: 200, player: BLACK },
+  { re: /(?=(\.WW\.))/g, score: 200, player: WHITE },
+];
+
+function evaluateBoard(bd, aiPlayer){
+  let black = 0, white = 0;
+  for(const cells of ALL_LINES){
+    const str = lineToString(cells, bd);
+    for(const p of PATTERNS){
+      const matches = str.match(p.re);
+      if(matches){
+        if(p.player === BLACK) black += matches.length * p.score;
+        else white += matches.length * p.score;
+      }
+    }
+  }
+  return aiPlayer===BLACK ? (black-white) : (white-black);
+}
+
+function minimax(bd, depth, alpha, beta, maximizing, aiPlayer){
+  const opp = aiPlayer===BLACK?WHITE:BLACK;
+  if(depth===0){
+    return evaluateBoard(bd, aiPlayer);
+  }
+  const player = maximizing ? aiPlayer : opp;
+  let candidates = getCandidateMoves(bd);
+  if(candidates.length===0) return evaluateBoard(bd, aiPlayer);
+  candidates = orderCandidates(bd, candidates, player).slice(0, depth>=3 ? 10 : 14);
+
+  if(maximizing){
+    let best = -Infinity;
+    for(const [r,c] of candidates){
+      bd[r][c] = player;
+      const win = checkWin(bd,r,c,player);
+      const val = win ? 10000000 : minimax(bd, depth-1, alpha, beta, false, aiPlayer);
+      bd[r][c] = EMPTY;
+      best = Math.max(best, val);
+      alpha = Math.max(alpha, val);
+      if(beta <= alpha) break;
+    }
+    return best;
+  } else {
+    let best = Infinity;
+    for(const [r,c] of candidates){
+      bd[r][c] = player;
+      const win = checkWin(bd,r,c,player);
+      const val = win ? -10000000 : minimax(bd, depth-1, alpha, beta, true, aiPlayer);
+      bd[r][c] = EMPTY;
+      best = Math.min(best, val);
+      beta = Math.min(beta, val);
+      if(beta <= alpha) break;
+    }
+    return best;
+  }
+}
+
+function aiMove(){
+  if(gameOver) return;
+  const settings = DIFF_SETTINGS[difficulty];
+  const aiPlayer = WHITE, human = BLACK;
+
+  let move = findImmediateWin(board, aiPlayer);
+
+  if(!move && Math.random() < settings.blockProb){
+    move = findImmediateWin(board, human);
+  }
+
+  if(!move){
+    if(Math.random() < settings.randomProb){
+      const candidates = getCandidateMoves(board);
+      move = candidates[Math.floor(Math.random()*candidates.length)];
+    } else {
+      let candidates = getCandidateMoves(board);
+      candidates = orderCandidates(board, candidates, aiPlayer).slice(0, 12);
+      let bestScore = -Infinity, bestMove = candidates[0];
+      for(const [r,c] of candidates){
+        board[r][c] = aiPlayer;
+        const win = checkWin(board,r,c,aiPlayer);
+        const val = win ? 10000000 : minimax(board, settings.depth-1, -Infinity, Infinity, false, aiPlayer);
+        board[r][c] = EMPTY;
+        if(val > bestScore){ bestScore = val; bestMove = [r,c]; }
+      }
+      move = bestMove;
+    }
+  }
+
+  thinkingText.textContent = '';
+  if(move) playMove(move[0], move[1], aiPlayer);
+}
+
+diffSeg.style.display = 'flex';
+init();
+</script>
+</body>
+</html>
