@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>카드 게임</title>
+<style>
+  :root{
+    --felt:#14503f; --felt-2:#0e3b2e; --line:#236b55;
+    --gold:#e0b354; --cream:#fdfbf5; --red:#c8102e; --dim:#8fb8a8;
+    --kr:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --cw:74px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:14px;font-family:var(--kr);color:var(--cream);
+       background:radial-gradient(ellipse at 50% -15%,#1d6b53 0%,transparent 65%),var(--felt)}
+  .wrap{max-width:820px;margin:0 auto}
+
+  .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+       padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:16px}
+  .logo{font-size:19px;font-weight:800;letter-spacing:-.02em;cursor:pointer}
+  .logo em{font-style:normal;color:var(--gold)}
+  .meters{margin-left:auto;display:flex;gap:14px;font-family:var(--mono);font-size:12px;color:var(--dim)}
+  .meters b{color:var(--cream);font-weight:600}
+  .meters .up{color:#6fd39f}.meters .dn{color:#ff8a7a}
+  .back{font-size:12.5px;color:var(--dim);background:none;border:none;cursor:pointer;padding:0}
+  .back:hover{color:var(--gold)}
+
+  /* ── 게임 선택 ── */
+  .picker{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+  .tile{text-align:left;padding:18px;border-radius:12px;border:1px solid var(--line);
+        background:var(--felt-2);cursor:pointer;font-family:var(--kr);color:var(--cream);
+        transition:border-color .14s,transform .14s}
+  .tile:hover{border-color:var(--gold);transform:translateY(-2px)}
+  .tile:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .tile h3{margin:0 0 5px;font-size:17px;font-weight:800;letter-spacing:-.01em}
+  .tile h3 .no{font-family:var(--mono);font-size:11px;color:var(--gold);margin-right:8px;font-weight:600;vertical-align:2px}
+  .tile p{margin:0 0 12px;font-size:12.5px;color:var(--dim);line-height:1.6}
+  .tile .mini{display:flex;gap:4px}
+  .tile .mini div{width:30px;aspect-ratio:140/200;border-radius:3px;overflow:hidden;background:var(--cream)}
+  .tile .mini svg{display:block;width:100%;height:100%}
+  .tile .teach{font-family:var(--mono);font-size:10.5px;color:var(--gold);
+               letter-spacing:.04em;margin-top:11px}
+
+  /* ── 공용 게임 요소 ── */
+  .zone{padding:12px;border:1px solid var(--line);border-radius:10px;
+        background:var(--felt-2);margin-bottom:12px}
+  .zone h2{margin:0 0 9px;font-size:11px;letter-spacing:.14em;color:var(--dim);font-weight:600}
+  .cards{display:flex;gap:6px;flex-wrap:wrap;min-height:calc(var(--cw)*1.43)}
+  .card{width:var(--cw);aspect-ratio:140/200;border-radius:6px;overflow:hidden;flex:0 0 auto;
+        background:var(--cream);box-shadow:0 3px 7px rgba(0,0,0,.32);animation:deal .26s ease-out}
+  .card svg{display:block;width:100%;height:100%}
+  .card.best{box-shadow:0 0 0 3px var(--gold),0 3px 7px rgba(0,0,0,.32)}
+  @keyframes deal{from{transform:translateY(-18px) rotate(-5deg);opacity:0}}
+
+  .total{font-family:var(--mono);font-size:15px;font-weight:700;margin-top:9px}
+  .total .soft{color:var(--gold);font-size:11px;font-weight:600;letter-spacing:.06em}
+  .total .bust{color:#ff8a7a}
+
+  .seat{border:1px solid transparent;border-radius:9px;padding:8px;margin-bottom:6px}
+  .seat.on{border-color:var(--gold);background:rgba(224,179,84,.07)}
+  .seat .tag{font-family:var(--mono);font-size:11px;color:var(--dim);margin-bottom:6px}
+  .seat .tag b{color:var(--cream)}
+  .seat .verdict{font-size:13px;font-weight:700;margin-top:6px}
+
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  button{font-family:var(--kr);font-size:13px;font-weight:700;padding:10px 15px;
+         border-radius:7px;border:1px solid var(--line);background:var(--felt-2);
+         color:var(--cream);cursor:pointer;transition:border-color .12s}
+  button:hover:not(:disabled){border-color:var(--gold)}
+  button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.go{background:var(--gold);border-color:var(--gold);color:#1a1508}
+  button.warn{background:var(--red);border-color:var(--red)}
+  .chip{width:46px;height:46px;border-radius:50%;padding:0;font-family:var(--mono);
+        font-size:13px;border-width:3px;border-style:dashed}
+  .chip.c10{background:#2f5fa8;border-color:#a8c4ea}
+  .chip.c25{background:#2c7a4e;border-color:#a5dcbd}
+  .chip.c100{background:#2b2b2b;border-color:#cfcfcf}
+  .chip.on{outline:2px solid var(--gold);outline-offset:2px}
+
+  .coach{margin-top:12px;padding:11px 13px;border-radius:9px;
+         background:rgba(224,179,84,.1);border:1px solid rgba(224,179,84,.4);font-size:13px;line-height:1.6}
+  .coach b{color:var(--gold)}
+  .coach .why{color:var(--dim);font-size:12px}
+  .msg{font-size:13px;color:var(--dim);min-height:20px;margin-top:11px;line-height:1.6}
+  .msg b{color:var(--gold)}
+  label.sw{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--dim);cursor:pointer}
+  .rules{margin-top:16px;font-size:11.5px;color:var(--dim);line-height:1.8;
+         border-top:1px solid var(--line);padding-top:11px}
+  .rules code{background:var(--felt-2);padding:1px 5px;border-radius:3px;font-size:11px}
+  .probs{display:flex;flex-direction:column;gap:7px}
+  .pbar{display:grid;grid-template-columns:44px 1fr 52px 44px;align-items:center;gap:9px;
+        font-size:12px;font-family:var(--mono)}
+  .pbar span{color:var(--dim)}
+  .pbar i{display:block;height:9px;border-radius:5px;background:var(--gold);min-width:2px}
+  .pbar b{text-align:right}
+  .pbar em{font-style:normal;color:var(--dim);text-align:right}
+  .grid16{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;max-width:340px}
+  .tilecard{padding:0;border:none;background:var(--cream);border-radius:6px;overflow:hidden;
+            aspect-ratio:140/200;cursor:pointer;box-shadow:0 3px 7px rgba(0,0,0,.3)}
+  .tilecard svg{display:block;width:100%;height:100%}
+  .tilecard.matched{opacity:.42;cursor:default}
+  .card.sm{width:calc(var(--cw)*.55)}
+  .card.playable{box-shadow:0 0 0 2px var(--gold),0 3px 7px rgba(0,0,0,.32);cursor:pointer}
+  .card.dull{opacity:.5}
+  .deckgrid{display:grid;grid-template-columns:repeat(13,1fr);gap:4px}
+  .slot{padding:0;border:none;background:var(--cream);border-radius:4px;overflow:hidden;
+        aspect-ratio:140/200;cursor:pointer;box-shadow:0 2px 5px rgba(0,0,0,.28);
+        transition:transform .12s}
+  .slot svg{display:block;width:100%;height:100%}
+  .slot:hover:not(:disabled){transform:translateY(-3px)}
+  .slot:disabled{cursor:default}
+  .slot.chosen{box-shadow:0 0 0 2px var(--gold),0 2px 5px rgba(0,0,0,.28)}
+  .verdictbox{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+              padding:14px 16px;border-radius:10px;margin:4px 0 12px;
+              border:1px solid var(--line);background:rgba(255,255,255,.04)}
+  .verdictbox.gold{border-color:var(--gold);background:rgba(224,179,84,.14)}
+  .verdictbox.good{border-color:#6fd39f;background:rgba(111,211,159,.1)}
+  .vname{font-size:24px;font-weight:800;letter-spacing:-.02em}
+  .verdictbox.gold .vname{color:var(--gold)}
+  .verdictbox.good .vname{color:#6fd39f}
+  .vgrade{font-size:12.5px;color:var(--dim);margin-left:auto}
+  .vwhy{font-size:13px;line-height:1.7;color:var(--cream);margin:0 0 12px}
+  .vwhy b{color:var(--gold)}
+  .odds{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+  .odds div{padding:11px 13px;border-radius:9px;background:var(--felt-2);
+            border:1px solid var(--line)}
+  .odds span{display:block;font-size:11.5px;color:var(--dim);margin-bottom:4px}
+  .odds b{font-family:var(--mono);font-size:19px;font-weight:700;color:var(--gold)}
+  .odds em{font-style:normal;font-size:11.5px;color:var(--dim);margin-left:8px}
+  @media (max-width:560px){.deckgrid{grid-template-columns:repeat(7,1fr)}}
+  .spots{display:grid;gap:10px;margin-bottom:12px}
+  .spot{display:flex;gap:14px;align-items:flex-start;padding:14px;
+        border:1px solid var(--line);border-radius:10px;background:var(--felt-2)}
+  .spotcard{width:calc(var(--cw)*.92);flex:0 0 auto;border-radius:6px;overflow:hidden;
+            background:var(--cream);box-shadow:0 3px 7px rgba(0,0,0,.3)}
+  .spotcard svg{display:block;width:100%;height:100%}
+  .spottext{min-width:0}
+  .spottext h3{margin:0 0 3px;font-size:12px;letter-spacing:.12em;color:var(--gold);font-weight:700}
+  .spotcaption{font-family:var(--mono);font-size:11.5px;color:var(--dim);margin-bottom:7px}
+  .spottext p{margin:0;font-size:13.5px;line-height:1.75;word-break:keep-all}
+  .spottext p b{color:var(--gold)}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  @media (max-width:480px){:root{--cw:60px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="logo" id="logo">카드<em>게임</em></div>
+    <div class="meters" id="meters"></div>
+  </div>
+  <div id="stage"></div>
+</div>
+
+<script>
+/*__ART_TRUMP__*/
+
+const BACK_SVG = `<svg viewBox="0 0 140 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="뒤집힌 카드">
+  <rect x="1.5" y="1.5" width="137" height="197" rx="10" fill="#fdfbf5" stroke="#c9c2b4" stroke-width="1.5"/>
+  <rect x="9" y="9" width="122" height="182" rx="6" fill="#8d1f2c"/>
+  <g stroke="#d98b96" stroke-width="1.6" opacity=".85">
+    <path d="M9 30 L131 30 M9 60 L131 60 M9 90 L131 90 M9 120 L131 120 M9 150 L131 150 M9 175 L131 175"/>
+    <path d="M30 9 L30 191 M55 9 L55 191 M85 9 L85 191 M110 9 L110 191"/>
+  </g>
+  <circle cx="70" cy="100" r="26" fill="#fdfbf5" opacity=".14"/>
+  <circle cx="70" cy="100" r="18" fill="none" stroke="#f2cdd2" stroke-width="2"/>
+</svg>`;
+
+/*__BLACKJACK_ENGINE__*/
+/*__POKER_ENGINE__*/
+/*__BLACKJACK_VIEW__*/
+/*__POKER_VIEW__*/
+
+/*__GAMES_BASIC__*/
+
+/*__DRAW7__*/
+
+/*__FORTUNE__*/
+
+// ── 허브 ──────────────────────────────────────────────────
+const GAMES = [
+  {
+    id: 'war', title: '워', mount: mountWar,
+    desc: '카드를 한 장씩 뒤집어 높은 쪽이 가져갑니다. 플레이어가 고를 것이 하나도 없습니다.',
+    teach: '셔플 · 비교 · 큐',
+    peek: [['A', 'spade'], ['7', 'heart']],
+    meters: '',
+  },
+  {
+    id: 'highlow', title: '하이로우', mount: mountHighLow,
+    desc: '다음 카드가 높을지 낮을지 맞힙니다. 남은 카드를 세면 확률이 그대로 보입니다.',
+    teach: '조건부 확률',
+    peek: [['9', 'diamond'], ['K', 'club']],
+    meters: '',
+  },
+  {
+    id: 'memory', title: '메모리', mount: mountMemory,
+    desc: '카드를 두 장씩 뒤집어 같은 숫자를 찾습니다. 규칙은 단순하고 상태는 복잡합니다.',
+    teach: '2차원 배열 · 상태 관리',
+    peek: [['Q', 'heart'], ['Q', 'spade']],
+    meters: '',
+  },
+  {
+    id: 'onecard', title: '원카드', mount: mountOneCard,
+    desc: '같은 숫자나 무늬를 내려놓습니다. A·2 공격, 7 무늬 지정, J·Q·K는 한 번 더.',
+    teach: '규칙 분기 · 특수 카드',
+    peek: [['2', 'spade'], ['7', 'diamond'], ['J', 'heart']],
+    meters: '',
+  },
+  {
+    id: 'blackjack', title: '블랙잭', mount: mountBlackjack,
+    desc: '딜러보다 21에 가깝게. 히트·스탠드·더블·스플릿·서렌더에 기본 전략 코치가 붙습니다.',
+    teach: '조건 분기 · 소프트/하드 판정',
+    peek: [['A', 'spade'], ['K', 'heart']],
+    meters: '<span>자금 <b id="bank">1,000</b></span>'
+          + '<span>손익 <b id="pl">0</b></span>'
+          + '<span>슈 <b id="shoe">312</b>장</span>',
+  },
+  {
+    id: 'poker', title: '홀덤 포커', mount: mountPoker,
+    desc: '홀카드 2장과 공유 카드 5장, 총 7장에서 최선의 5장을 찾아 딜러와 겨룹니다.',
+    teach: '조합 탐색 · 정수 인코딩 비교',
+    peek: [['Q', 'diamond'], ['J', 'club'], ['10', 'spade']],
+    meters: '<span>자금 <b id="pkBank">1,000</b></span>',
+  },
+  {
+    id: 'draw7', title: '카드운세', mount: mountDraw7,
+    desc: '덮인 52장에서 일곱 장을 고르면 어떤 족보가 나왔는지, 얼마나 운이 좋은지 알려줍니다.',
+    teach: '확률 · 조합 · 희귀도',
+    peek: [['A', 'heart'], ['A', 'spade'], ['A', 'club']],
+    meters: '',
+  },
+  {
+    id: 'fortune', title: '오늘의 운세', mount: mountFortune,
+    desc: '카드 세 장으로 오늘의 기운·주의점·조언을 봅니다. 같은 날에는 늘 같은 결과입니다.',
+    teach: '시드 고정 난수 · 재현성',
+    peek: [['Q', 'heart'], ['7', 'spade'], ['A', 'diamond']],
+    meters: '',
+  },
+];
+
+const stage = document.getElementById('stage');
+const meters = document.getElementById('meters');
+
+function showMenu() {
+  meters.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'picker';
+  GAMES.forEach((g, i) => {
+    const t = document.createElement('button');
+    t.className = 'tile';
+    t.innerHTML = `<h3><span class="no">${String(i + 1).padStart(2, '0')}</span>${g.title}</h3><p>${g.desc}</p>` +
+      `<div class="mini">${g.peek.map(([r, s]) => `<div>${cardSVG(r, s)}</div>`).join('')}</div>` +
+      `<div class="teach">${g.teach}</div>`;
+    t.onclick = () => openGame(g);
+    grid.appendChild(t);
+  });
+  stage.innerHTML = '';
+  stage.appendChild(grid);
+}
+
+function openGame(game) {
+  meters.innerHTML = game.meters + ' <button class="back" id="back">← 게임 선택</button>';
+  stage.innerHTML = '';
+  const root = document.createElement('div');
+  stage.appendChild(root);
+  game.mount(root);
+  document.getElementById('back').onclick = showMenu;
+}
+
+document.getElementById('logo').onclick = showMenu;
+showMenu();
+</script>
+</body>
+</html>

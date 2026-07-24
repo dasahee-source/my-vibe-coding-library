@@ -1,0 +1,13 @@
+{
+  "name": "card-games-tests",
+  "private": true,
+  "scripts": {
+    "test": "node engines.test.js && node smoke.js && node stress.js"
+  },
+  "devDependencies": {
+    "jsdom": "^26.0.0"
+  },
+  "dependencies": {
+    "site-creator-vinext-starter": "file:../.."
+  }
+}

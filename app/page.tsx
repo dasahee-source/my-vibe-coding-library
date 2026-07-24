@@ -22,6 +22,21 @@ const categories = ["전체", "게임", "생활", "재미", "학습", "도구"];
 
 const sampleProjects: Project[] = [
   {
+    id: "card-games",
+    title: "카드게임 8종 세트",
+    summary: "워부터 블랙잭과 홀덤 포커까지 한 화면에서 즐기는 브라우저 카드게임 모음",
+    category: "게임",
+    level: "초급",
+    prompt:
+      "외부 이미지 없이 SVG 카드로 워, 하이로우, 메모리, 원카드, 블랙잭, 홀덤 포커, 카드운세, 오늘의 운세를 한 화면에서 실행할 수 있게 만들어줘.",
+    lesson: "셔플과 확률, 상태 관리, 카드 규칙 분기, 포커 조합 판정",
+    demoUrl: "card-games/",
+    githubUrl: "https://github.com/dasahee-source/my-vibe-coding-library/tree/main/card-games",
+    status: "완성",
+    favorite: false,
+    createdAt: "2026-07-25",
+  },
+  {
     id: "omok",
     title: "오목",
     summary: "15×15 바둑판에서 AI 또는 친구와 다섯 개의 돌을 먼저 잇는 전통 보드게임",

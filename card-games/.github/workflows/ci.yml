@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  web:
+    name: 웹 (엔진 · 브라우저)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: 빌드 결과가 소스와 일치하는지
+        run: python3 build.py --check
+      - name: 의존성 설치
+        run: npm --prefix tests install
+      - name: 규칙 엔진 단위 검증
+        run: node tests/engines.test.js
+      - name: 브라우저에서 8종 자동 조작
+        run: node tests/smoke.js
+      - name: 게임 전환 스트레스
+        run: node tests/stress.js
+
+  python:
+    name: 파이썬 (고스톱 엔진)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e "./python[dev]"
+      - run: ruff check python
+      - run: pytest python -q
