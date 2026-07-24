@@ -22,6 +22,21 @@ const categories = ["전체", "게임", "생활", "재미", "학습", "도구"];
 
 const sampleProjects: Project[] = [
   {
+    id: "omok",
+    title: "오목",
+    summary: "15×15 바둑판에서 AI 또는 친구와 다섯 개의 돌을 먼저 잇는 전통 보드게임",
+    category: "게임",
+    level: "초급",
+    prompt:
+      "HTML, CSS, JavaScript로 15×15 오목판을 만들고 AI 대전과 2인 대전, 난이도 선택, 승리 판정과 다시 시작 기능을 구현해줘.",
+    lesson: "보드 상태 관리, 승리 조건 탐색, 미니맥스 기반 AI",
+    demoUrl: "omok.html",
+    githubUrl: "https://github.com/dasahee-source/my-vibe-coding-library",
+    status: "완성",
+    favorite: false,
+    createdAt: "2026-07-25",
+  },
+  {
     id: "dice-game",
     title: "주사위 놀이",
     summary: "버튼을 누르면 두 개의 주사위를 굴리고 합계를 보여주는 작은 게임",
