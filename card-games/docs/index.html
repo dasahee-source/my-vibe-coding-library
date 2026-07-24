@@ -1,0 +1,2025 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>카드 게임</title>
+<style>
+  :root{
+    --felt:#14503f; --felt-2:#0e3b2e; --line:#236b55;
+    --gold:#e0b354; --cream:#fdfbf5; --red:#c8102e; --dim:#8fb8a8;
+    --kr:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --cw:74px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:14px;font-family:var(--kr);color:var(--cream);
+       background:radial-gradient(ellipse at 50% -15%,#1d6b53 0%,transparent 65%),var(--felt)}
+  .wrap{max-width:820px;margin:0 auto}
+
+  .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+       padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:16px}
+  .logo{font-size:19px;font-weight:800;letter-spacing:-.02em;cursor:pointer}
+  .logo em{font-style:normal;color:var(--gold)}
+  .meters{margin-left:auto;display:flex;gap:14px;font-family:var(--mono);font-size:12px;color:var(--dim)}
+  .meters b{color:var(--cream);font-weight:600}
+  .meters .up{color:#6fd39f}.meters .dn{color:#ff8a7a}
+  .back{font-size:12.5px;color:var(--dim);background:none;border:none;cursor:pointer;padding:0}
+  .back:hover{color:var(--gold)}
+
+  /* ── 게임 선택 ── */
+  .picker{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+  .tile{text-align:left;padding:18px;border-radius:12px;border:1px solid var(--line);
+        background:var(--felt-2);cursor:pointer;font-family:var(--kr);color:var(--cream);
+        transition:border-color .14s,transform .14s}
+  .tile:hover{border-color:var(--gold);transform:translateY(-2px)}
+  .tile:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .tile h3{margin:0 0 5px;font-size:17px;font-weight:800;letter-spacing:-.01em}
+  .tile h3 .no{font-family:var(--mono);font-size:11px;color:var(--gold);margin-right:8px;font-weight:600;vertical-align:2px}
+  .tile p{margin:0 0 12px;font-size:12.5px;color:var(--dim);line-height:1.6}
+  .tile .mini{display:flex;gap:4px}
+  .tile .mini div{width:30px;aspect-ratio:140/200;border-radius:3px;overflow:hidden;background:var(--cream)}
+  .tile .mini svg{display:block;width:100%;height:100%}
+  .tile .teach{font-family:var(--mono);font-size:10.5px;color:var(--gold);
+               letter-spacing:.04em;margin-top:11px}
+
+  /* ── 공용 게임 요소 ── */
+  .zone{padding:12px;border:1px solid var(--line);border-radius:10px;
+        background:var(--felt-2);margin-bottom:12px}
+  .zone h2{margin:0 0 9px;font-size:11px;letter-spacing:.14em;color:var(--dim);font-weight:600}
+  .cards{display:flex;gap:6px;flex-wrap:wrap;min-height:calc(var(--cw)*1.43)}
+  .card{width:var(--cw);aspect-ratio:140/200;border-radius:6px;overflow:hidden;flex:0 0 auto;
+        background:var(--cream);box-shadow:0 3px 7px rgba(0,0,0,.32);animation:deal .26s ease-out}
+  .card svg{display:block;width:100%;height:100%}
+  .card.best{box-shadow:0 0 0 3px var(--gold),0 3px 7px rgba(0,0,0,.32)}
+  @keyframes deal{from{transform:translateY(-18px) rotate(-5deg);opacity:0}}
+
+  .total{font-family:var(--mono);font-size:15px;font-weight:700;margin-top:9px}
+  .total .soft{color:var(--gold);font-size:11px;font-weight:600;letter-spacing:.06em}
+  .total .bust{color:#ff8a7a}
+
+  .seat{border:1px solid transparent;border-radius:9px;padding:8px;margin-bottom:6px}
+  .seat.on{border-color:var(--gold);background:rgba(224,179,84,.07)}
+  .seat .tag{font-family:var(--mono);font-size:11px;color:var(--dim);margin-bottom:6px}
+  .seat .tag b{color:var(--cream)}
+  .seat .verdict{font-size:13px;font-weight:700;margin-top:6px}
+
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  button{font-family:var(--kr);font-size:13px;font-weight:700;padding:10px 15px;
+         border-radius:7px;border:1px solid var(--line);background:var(--felt-2);
+         color:var(--cream);cursor:pointer;transition:border-color .12s}
+  button:hover:not(:disabled){border-color:var(--gold)}
+  button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.go{background:var(--gold);border-color:var(--gold);color:#1a1508}
+  button.warn{background:var(--red);border-color:var(--red)}
+  .chip{width:46px;height:46px;border-radius:50%;padding:0;font-family:var(--mono);
+        font-size:13px;border-width:3px;border-style:dashed}
+  .chip.c10{background:#2f5fa8;border-color:#a8c4ea}
+  .chip.c25{background:#2c7a4e;border-color:#a5dcbd}
+  .chip.c100{background:#2b2b2b;border-color:#cfcfcf}
+  .chip.on{outline:2px solid var(--gold);outline-offset:2px}
+
+  .coach{margin-top:12px;padding:11px 13px;border-radius:9px;
+         background:rgba(224,179,84,.1);border:1px solid rgba(224,179,84,.4);font-size:13px;line-height:1.6}
+  .coach b{color:var(--gold)}
+  .coach .why{color:var(--dim);font-size:12px}
+  .msg{font-size:13px;color:var(--dim);min-height:20px;margin-top:11px;line-height:1.6}
+  .msg b{color:var(--gold)}
+  label.sw{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--dim);cursor:pointer}
+  .rules{margin-top:16px;font-size:11.5px;color:var(--dim);line-height:1.8;
+         border-top:1px solid var(--line);padding-top:11px}
+  .rules code{background:var(--felt-2);padding:1px 5px;border-radius:3px;font-size:11px}
+  .probs{display:flex;flex-direction:column;gap:7px}
+  .pbar{display:grid;grid-template-columns:44px 1fr 52px 44px;align-items:center;gap:9px;
+        font-size:12px;font-family:var(--mono)}
+  .pbar span{color:var(--dim)}
+  .pbar i{display:block;height:9px;border-radius:5px;background:var(--gold);min-width:2px}
+  .pbar b{text-align:right}
+  .pbar em{font-style:normal;color:var(--dim);text-align:right}
+  .grid16{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;max-width:340px}
+  .tilecard{padding:0;border:none;background:var(--cream);border-radius:6px;overflow:hidden;
+            aspect-ratio:140/200;cursor:pointer;box-shadow:0 3px 7px rgba(0,0,0,.3)}
+  .tilecard svg{display:block;width:100%;height:100%}
+  .tilecard.matched{opacity:.42;cursor:default}
+  .card.sm{width:calc(var(--cw)*.55)}
+  .card.playable{box-shadow:0 0 0 2px var(--gold),0 3px 7px rgba(0,0,0,.32);cursor:pointer}
+  .card.dull{opacity:.5}
+  .deckgrid{display:grid;grid-template-columns:repeat(13,1fr);gap:4px}
+  .slot{padding:0;border:none;background:var(--cream);border-radius:4px;overflow:hidden;
+        aspect-ratio:140/200;cursor:pointer;box-shadow:0 2px 5px rgba(0,0,0,.28);
+        transition:transform .12s}
+  .slot svg{display:block;width:100%;height:100%}
+  .slot:hover:not(:disabled){transform:translateY(-3px)}
+  .slot:disabled{cursor:default}
+  .slot.chosen{box-shadow:0 0 0 2px var(--gold),0 2px 5px rgba(0,0,0,.28)}
+  .verdictbox{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+              padding:14px 16px;border-radius:10px;margin:4px 0 12px;
+              border:1px solid var(--line);background:rgba(255,255,255,.04)}
+  .verdictbox.gold{border-color:var(--gold);background:rgba(224,179,84,.14)}
+  .verdictbox.good{border-color:#6fd39f;background:rgba(111,211,159,.1)}
+  .vname{font-size:24px;font-weight:800;letter-spacing:-.02em}
+  .verdictbox.gold .vname{color:var(--gold)}
+  .verdictbox.good .vname{color:#6fd39f}
+  .vgrade{font-size:12.5px;color:var(--dim);margin-left:auto}
+  .vwhy{font-size:13px;line-height:1.7;color:var(--cream);margin:0 0 12px}
+  .vwhy b{color:var(--gold)}
+  .odds{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+  .odds div{padding:11px 13px;border-radius:9px;background:var(--felt-2);
+            border:1px solid var(--line)}
+  .odds span{display:block;font-size:11.5px;color:var(--dim);margin-bottom:4px}
+  .odds b{font-family:var(--mono);font-size:19px;font-weight:700;color:var(--gold)}
+  .odds em{font-style:normal;font-size:11.5px;color:var(--dim);margin-left:8px}
+  @media (max-width:560px){.deckgrid{grid-template-columns:repeat(7,1fr)}}
+  .spots{display:grid;gap:10px;margin-bottom:12px}
+  .spot{display:flex;gap:14px;align-items:flex-start;padding:14px;
+        border:1px solid var(--line);border-radius:10px;background:var(--felt-2)}
+  .spotcard{width:calc(var(--cw)*.92);flex:0 0 auto;border-radius:6px;overflow:hidden;
+            background:var(--cream);box-shadow:0 3px 7px rgba(0,0,0,.3)}
+  .spotcard svg{display:block;width:100%;height:100%}
+  .spottext{min-width:0}
+  .spottext h3{margin:0 0 3px;font-size:12px;letter-spacing:.12em;color:var(--gold);font-weight:700}
+  .spotcaption{font-family:var(--mono);font-size:11.5px;color:var(--dim);margin-bottom:7px}
+  .spottext p{margin:0;font-size:13.5px;line-height:1.75;word-break:keep-all}
+  .spottext p b{color:var(--gold)}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  @media (max-width:480px){:root{--cw:60px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="logo" id="logo">카드<em>게임</em></div>
+    <div class="meters" id="meters"></div>
+  </div>
+  <div id="stage"></div>
+</div>
+
+<script>
+// 트럼프 52장 렌더러.
+// 구조: 무늬 4개(패스) + 핍 배치표 + 궁정패 6종(J/Q/K × 적·흑).
+// 궁정패는 실제 카드처럼 상하 대칭이라 위쪽 절반만 그리고 180도 회전 복제한다.
+
+const W = 140, H = 200;          // 카드 캔버스
+const RED = '#c8102e', BLACK = '#1b1b1b';
+const GOLD = '#d9a441', ROBE_R = '#b5323f', ROBE_B = '#2f4b8f';
+const SKIN = '#f0d0b4', PAPER = '#fdfbf5', LINE = '#1b1b1b';
+
+// ── 무늬: 0~100 정사각 좌표계에 그린 뒤 배치할 때 축소한다 ──
+const SUIT_PATH = {
+  spade: 'M50 5 C50 5 10 39 10 58 C10 72 20 80 32 80 C40 80 46 76 49 70 '
+       + 'C47 84 41 92 33 96 L67 96 C59 92 53 84 51 70 C54 76 60 80 68 80 '
+       + 'C80 80 90 72 90 58 C90 39 50 5 50 5Z',
+  heart: 'M50 95 C18 70 8 52 8 35 C8 19 19 9 32 9 C41 9 47 14 50 21 '
+       + 'C53 14 59 9 68 9 C81 9 92 19 92 35 C92 52 82 70 50 95Z',
+  diamond: 'M50 3 L91 50 L50 97 L9 50Z',
+  club: 'M50 5 C61 5 70 14 70 25 C70 29 69 32 67 35 C70 33 74 32 78 32 '
+      + 'C89 32 98 41 98 52 C98 63 89 72 78 72 C70 72 63 68 59 61 '
+      + 'C59 76 63 88 70 96 L30 96 C37 88 41 76 41 61 C37 68 30 72 22 72 '
+      + 'C11 72 2 63 2 52 C2 41 11 32 22 32 C26 32 30 33 33 35 '
+      + 'C31 32 30 29 30 25 C30 14 39 5 50 5Z',
+};
+const SUIT_COLOR = { spade: BLACK, club: BLACK, heart: RED, diamond: RED };
+const SUIT_GLYPH = { spade: '♠', heart: '♥', diamond: '♦', club: '♣' };
+
+function pip(suit, cx, cy, size, flip = false) {
+  const s = size / 100;
+  const t = `translate(${cx},${cy}) scale(${s}) ${flip ? 'rotate(180)' : ''} translate(-50,-50)`;
+  return `<path d="${SUIT_PATH[suit]}" fill="${SUIT_COLOR[suit]}" transform="${t}"/>`;
+}
+
+// ── 핍 배치: [x, y] 비율. y<0.5는 정방향, 그 아래는 180도 뒤집는다 ──
+const COL_L = 0.32, COL_C = 0.5, COL_R = 0.68;
+const LAYOUT = {
+  A: [[COL_C, 0.5]],
+  2: [[COL_C, 0.22], [COL_C, 0.78]],
+  3: [[COL_C, 0.22], [COL_C, 0.5], [COL_C, 0.78]],
+  4: [[COL_L, 0.22], [COL_R, 0.22], [COL_L, 0.78], [COL_R, 0.78]],
+  5: [[COL_L, 0.22], [COL_R, 0.22], [COL_C, 0.5], [COL_L, 0.78], [COL_R, 0.78]],
+  6: [[COL_L, 0.22], [COL_R, 0.22], [COL_L, 0.5], [COL_R, 0.5], [COL_L, 0.78], [COL_R, 0.78]],
+  7: [[COL_L, 0.22], [COL_R, 0.22], [COL_C, 0.36], [COL_L, 0.5], [COL_R, 0.5],
+      [COL_L, 0.78], [COL_R, 0.78]],
+  8: [[COL_L, 0.22], [COL_R, 0.22], [COL_C, 0.36], [COL_L, 0.5], [COL_R, 0.5],
+      [COL_C, 0.64], [COL_L, 0.78], [COL_R, 0.78]],
+  9: [[COL_L, 0.22], [COL_R, 0.22], [COL_L, 0.41], [COL_R, 0.41], [COL_C, 0.5],
+      [COL_L, 0.59], [COL_R, 0.59], [COL_L, 0.78], [COL_R, 0.78]],
+  10: [[COL_L, 0.22], [COL_R, 0.22], [COL_C, 0.315], [COL_L, 0.41], [COL_R, 0.41],
+       [COL_L, 0.59], [COL_R, 0.59], [COL_C, 0.685], [COL_L, 0.78], [COL_R, 0.78]],
+};
+
+// ── 궁정패: 위쪽 절반만 그린다 (y 20~100 영역) ──
+function courtHalf(rank, suit) {
+  const red = SUIT_COLOR[suit] === RED;
+  const robe = red ? ROBE_R : ROBE_B;
+  const trim = red ? ROBE_B : ROBE_R;
+  const s = [];
+
+  // 어깨와 옷
+  s.push(`<path d="M30 100 L30 84 C30 74 38 68 48 66 L92 66 C102 68 110 74 110 84 L110 100Z"
+           fill="${robe}" stroke="${LINE}" stroke-width="1.4"/>`);
+  // 옷 무늬: 사선 격자
+  s.push(`<path d="M34 100 L58 70 M46 100 L70 70 M58 100 L82 70 M70 100 L94 70 M82 100 L106 70"
+           stroke="${trim}" stroke-width="1.6" opacity=".55" fill="none"/>`);
+  // 깃
+  s.push(`<path d="M52 68 C58 78 66 82 70 82 C74 82 82 78 88 68 L82 66 L70 74 L58 66Z"
+           fill="${PAPER}" stroke="${LINE}" stroke-width="1.2"/>`);
+
+  // 머리카락
+  s.push(`<path d="M54 46 C54 34 62 28 70 28 C78 28 86 34 86 46 L86 58 C86 64 80 68 70 68
+           C60 68 54 64 54 58Z" fill="${red ? '#8a5a2b' : '#4a3a2c'}" stroke="${LINE}" stroke-width="1.3"/>`);
+  // 얼굴
+  s.push(`<path d="M59 44 C59 36 64 32 70 32 C76 32 81 36 81 44 L81 54
+           C81 61 76 65 70 65 C64 65 59 61 59 54Z" fill="${SKIN}" stroke="${LINE}" stroke-width="1.3"/>`);
+  // 눈·코·입
+  s.push(`<circle cx="65.5" cy="46" r="1.5" fill="${LINE}"/><circle cx="74.5" cy="46" r="1.5" fill="${LINE}"/>
+          <path d="M70 48 L70 53 M67 57 C68.5 58.5 71.5 58.5 73 57" stroke="${LINE}" stroke-width="1.1" fill="none"/>`);
+  // 수염 (K만)
+  if (rank === 'K') {
+    s.push(`<path d="M60 56 C60 68 64 76 70 76 C76 76 80 68 80 56
+             C78 62 74 64 70 64 C66 64 62 62 60 56Z" fill="#e8e2d6" stroke="${LINE}" stroke-width="1.2"/>`);
+  }
+
+  // 머리 장식
+  if (rank === 'K') {
+    s.push(`<path d="M52 32 L56 16 L63 26 L70 12 L77 26 L84 16 L88 32Z"
+             fill="${GOLD}" stroke="${LINE}" stroke-width="1.4"/>
+            <path d="M52 32 L88 32 L88 38 L52 38Z" fill="${GOLD}" stroke="${LINE}" stroke-width="1.4"/>
+            <circle cx="70" cy="35" r="2.4" fill="${RED}" stroke="${LINE}" stroke-width=".8"/>`);
+  } else if (rank === 'Q') {
+    s.push(`<path d="M56 34 C56 22 62 16 70 16 C78 16 84 22 84 34Z"
+             fill="${GOLD}" stroke="${LINE}" stroke-width="1.4"/>
+            <circle cx="70" cy="13" r="4" fill="${GOLD}" stroke="${LINE}" stroke-width="1.2"/>
+            <circle cx="60" cy="24" r="2" fill="${PAPER}"/><circle cx="80" cy="24" r="2" fill="${PAPER}"/>`);
+  } else {
+    s.push(`<path d="M52 40 C52 26 60 20 70 20 C80 20 88 26 88 40 L84 40
+             C84 30 78 25 70 25 C62 25 56 30 56 40Z" fill="${trim}" stroke="${LINE}" stroke-width="1.3"/>
+            <path d="M88 30 C96 22 100 14 98 8 C94 14 90 20 86 24Z" fill="${GOLD}" stroke="${LINE}" stroke-width="1.1"/>`);
+  }
+
+  // 손에 든 물건: K 검, Q 꽃, J 창
+  if (rank === 'K') {
+    s.push(`<path d="M38 100 L38 44 L41 38 L44 44 L44 100Z" fill="#cfd4da" stroke="${LINE}" stroke-width="1.2"/>
+            <path d="M32 52 L50 52 L50 56 L32 56Z" fill="${GOLD}" stroke="${LINE}" stroke-width="1.1"/>`);
+  } else if (rank === 'Q') {
+    s.push(`<path d="M40 100 L40 58" stroke="#3f6b3a" stroke-width="2.2"/>
+            <circle cx="40" cy="50" r="6" fill="${GOLD}" stroke="${LINE}" stroke-width="1.1"/>
+            <circle cx="40" cy="50" r="2.2" fill="${RED}"/>
+            <path d="M40 62 C34 60 32 56 33 52 C36 54 39 57 40 62Z" fill="#3f6b3a"/>`);
+  } else {
+    s.push(`<path d="M40 100 L40 40" stroke="#7a5a3a" stroke-width="2.4"/>
+            <path d="M40 40 L36 30 L40 20 L44 30Z" fill="#cfd4da" stroke="${LINE}" stroke-width="1.1"/>`);
+  }
+
+  // 어깨 옆 작은 무늬 표식
+  s.push(pip(suit, 100, 50, 20));
+  return s.join('');
+}
+
+function courtPanel(rank, suit, cid) {
+  const half = courtHalf(rank, suit);
+  return `<g clip-path="url(#${cid})">
+            <rect x="20" y="20" width="100" height="160" fill="${PAPER}"/>
+            ${half}
+            <g transform="rotate(180 70 100)">${half}</g>
+            <path d="M20 100 L120 100" stroke="${LINE}" stroke-width="1" opacity=".35"/>
+          </g>
+          <rect x="20" y="20" width="100" height="160" fill="none"
+                stroke="${LINE}" stroke-width="1.6"/>`;
+}
+
+// ── 카드 한 장 ────────────────────────────────────────────────
+function cardSVG(rank, suit) {
+  const color = SUIT_COLOR[suit];
+  const cid = `clip-${rank}-${suit}`;  // 한 문서에 52장을 넣어도 id가 겹치지 않게
+  const body = [];
+
+  if (['J', 'Q', 'K'].includes(rank)) {
+    body.push(courtPanel(rank, suit, cid));
+  } else if (rank === 'A') {
+    body.push(pip(suit, W / 2, H / 2, 56));
+  } else {
+    const size = rank === '10' || rank === '9' ? 21 : 24;
+    for (const [rx, ry] of LAYOUT[rank]) {
+      body.push(pip(suit, rx * W, ry * H, size, ry > 0.5));
+    }
+  }
+
+  // 모서리 표기: 좌상단 정방향, 우하단 180도
+  const corner = (x, y, rot) =>
+    `<g transform="translate(${x},${y}) rotate(${rot})">
+       <text x="0" y="0" text-anchor="middle" font-family="Georgia,serif"
+             font-size="19" font-weight="700" fill="${color}">${rank}</text>
+       <g transform="translate(-6,3) scale(.13)">
+         <path d="${SUIT_PATH[suit]}" fill="${color}"/>
+       </g>
+     </g>`;
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img"
+            aria-label="${rank} of ${suit}">
+    <defs><clipPath id="${cid}"><rect x="20" y="20" width="100" height="160" rx="2"/></clipPath></defs>
+    <rect x="1.5" y="1.5" width="${W - 3}" height="${H - 3}" rx="10"
+          fill="${PAPER}" stroke="#c9c2b4" stroke-width="1.5"/>
+    ${body.join('')}
+    ${corner(15, 24, 0)}
+    ${corner(W - 15, H - 24, 180)}
+  </svg>`;
+}
+
+const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+const SUITS = ['spade', 'heart', 'diamond', 'club'];
+
+const BACK_SVG = `<svg viewBox="0 0 140 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="뒤집힌 카드">
+  <rect x="1.5" y="1.5" width="137" height="197" rx="10" fill="#fdfbf5" stroke="#c9c2b4" stroke-width="1.5"/>
+  <rect x="9" y="9" width="122" height="182" rx="6" fill="#8d1f2c"/>
+  <g stroke="#d98b96" stroke-width="1.6" opacity=".85">
+    <path d="M9 30 L131 30 M9 60 L131 60 M9 90 L131 90 M9 120 L131 120 M9 150 L131 150 M9 175 L131 175"/>
+    <path d="M30 9 L30 191 M55 9 L55 191 M85 9 L85 191 M110 9 L110 191"/>
+  </g>
+  <circle cx="70" cy="100" r="26" fill="#fdfbf5" opacity=".14"/>
+  <circle cx="70" cy="100" r="18" fill="none" stroke="#f2cdd2" stroke-width="2"/>
+</svg>`;
+
+// 블랙잭 규칙 엔진. UI와 완전히 분리되어 있어 콘솔에서도 그대로 돌릴 수 있다.
+//
+// 채택한 규칙 (카지노마다 다르므로 RULES에 모아둠)
+//   덱 6벌, 관통률 75% · 딜러는 소프트 17에서 스탠드(S17)
+//   블랙잭 3:2 · 더블 후 스플릿 허용(DAS) · 스플릿은 4핸드까지
+//   에이스 스플릿은 각 1장만 받고 종료 · 얼리 서렌더 없음(레이트만)
+
+const RULES = {
+  decks: 6,
+  penetration: 0.75,
+  dealerHitsSoft17: false,
+  blackjackPays: 1.5,
+  doubleAfterSplit: true,
+  maxHands: 4,
+  surrender: true,
+  insurance: true,
+};
+
+// RANKS / SUITS 는 도안 모듈에서 선언한 것을 그대로 쓴다
+
+function rankValue(rank) {
+  if (rank === 'A') return 11;
+  if (['10', 'J', 'Q', 'K'].includes(rank)) return 10;
+  return parseInt(rank, 10);
+}
+
+// 에이스를 일단 11로 세고, 21을 넘으면 하나씩 1로 내린다.
+// soft = 아직 11로 쓰이는 에이스가 남아 있다는 뜻 (버스트 없이 한 장 더 받을 여지)
+function handValue(cards) {
+  let total = 0, aces = 0;
+  for (const c of cards) {
+    total += rankValue(c.rank);
+    if (c.rank === 'A') aces++;
+  }
+  while (total > 21 && aces > 0) { total -= 10; aces--; }
+  return { total, soft: aces > 0, busted: total > 21 };
+}
+
+const isBlackjack = (cards) => cards.length === 2 && handValue(cards).total === 21;
+const isPair = (cards) => cards.length === 2 && rankValue(cards[0].rank) === rankValue(cards[1].rank);
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+class Shoe {
+  constructor(decks = RULES.decks, seed = Math.floor(Math.random() * 1e9)) {
+    this.decks = decks;
+    this.rand = mulberry32(seed);
+    this.cards = [];
+    this.discarded = 0;
+    this.shuffle();
+  }
+  shuffle() {
+    this.cards = [];
+    for (let d = 0; d < this.decks; d++) {
+      for (const s of SUITS) for (const r of RANKS) this.cards.push({ rank: r, suit: s });
+    }
+    for (let i = this.cards.length - 1; i > 0; i--) {
+      const j = Math.floor(this.rand() * (i + 1));
+      [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
+    }
+    this.total = this.cards.length;
+    this.cutAt = Math.floor(this.total * (1 - RULES.penetration));
+    this.needsShuffle = false;
+  }
+  draw() {
+    if (!this.cards.length) this.shuffle();
+    const c = this.cards.pop();
+    if (this.cards.length <= this.cutAt) this.needsShuffle = true;
+    return c;
+  }
+  get remaining() { return this.cards.length; }
+}
+
+// ── 기본 전략표 ────────────────────────────────────────────────
+// 학생에게 보여줄 용도. H=히트 S=스탠드 D=더블(불가시 히트)
+// P=스플릿 R=서렌더(불가시 히트) Ds=더블(불가시 스탠드)
+function basicStrategy(hand, dealerUp, opts = {}) {
+  const canDouble = opts.canDouble ?? true;
+  const canSplit = opts.canSplit ?? true;
+  const canSurrender = opts.canSurrender ?? true;
+  const up = rankValue(dealerUp.rank) === 11 ? 11 : rankValue(dealerUp.rank);
+  const { total, soft } = handValue(hand);
+
+  const between = (lo, hi) => up >= lo && up <= hi;
+
+  if (canSplit && isPair(hand)) {
+    const r = rankValue(hand[0].rank);
+    if (r === 11) return act('P', '에이스 페어는 항상 스플릿');
+    if (r === 10) return act('S', '20은 나누지 않는다');
+    if (r === 9) return between(2, 9) && up !== 7 ? act('P', '딜러 7에는 18로 충분') : act('S');
+    if (r === 8) return act('P', '16을 깨는 유일한 방법');
+    if (r === 7) return between(2, 7) ? act('P') : act('H');
+    if (r === 6) return between(2, 6) ? act('P') : act('H');
+    if (r === 5) return between(2, 9) ? act('D', '10으로 취급') : act('H');
+    if (r === 4) return between(5, 6) ? act('P') : act('H');
+    if (r === 3 || r === 2) return between(2, 7) ? act('P') : act('H');
+  }
+
+  if (soft) {
+    if (total >= 19) return act('S');
+    if (total === 18) {
+      if (between(3, 6)) return act(canDouble ? 'D' : 'S', '소프트 18은 딜러 약패에 더블');
+      if (between(2, 2) || between(7, 8)) return act('S');
+      return act('H', '소프트 18도 9 이상에는 밀린다');
+    }
+    if (total === 17) return between(3, 6) ? act(canDouble ? 'D' : 'H') : act('H');
+    if (total >= 15) return between(4, 6) ? act(canDouble ? 'D' : 'H') : act('H');
+    return between(5, 6) ? act(canDouble ? 'D' : 'H') : act('H');
+  }
+
+  if (canSurrender && total === 16 && between(9, 11) && hand.length === 2 && !isPair(hand)) {
+    return act('R', '16 대 강패는 손실을 절반으로');
+  }
+  if (canSurrender && total === 15 && up === 10 && hand.length === 2) return act('R');
+
+  if (total >= 17) return act('S');
+  if (total >= 13) return between(2, 6) ? act('S', '딜러가 터지길 기다린다') : act('H');
+  if (total === 12) return between(4, 6) ? act('S') : act('H');
+  if (total === 11) return canDouble ? act('D', '가장 유리한 더블') : act('H');
+  if (total === 10) return between(2, 9) ? act(canDouble ? 'D' : 'H') : act('H');
+  if (total === 9) return between(3, 6) ? act(canDouble ? 'D' : 'H') : act('H');
+  return act('H');
+}
+
+function act(code, why = '') {
+  const label = { H: '히트', S: '스탠드', D: '더블', P: '스플릿', R: '서렌더' }[code];
+  return { code, label, why };
+}
+
+// ── 한 판 진행 ────────────────────────────────────────────────
+class Round {
+  constructor(shoe, bet) {
+    this.shoe = shoe;
+    this.dealer = [];
+    this.hands = [{ cards: [], bet, done: false, doubled: false, surrendered: false, fromSplit: false }];
+    this.active = 0;
+    this.insurance = 0;
+    this.phase = 'deal';
+    this.results = null;
+  }
+
+  deal() {
+    this.hands[0].cards.push(this.shoe.draw());
+    this.dealer.push(this.shoe.draw());
+    this.hands[0].cards.push(this.shoe.draw());
+    this.dealer.push(this.shoe.draw()); // 두 번째는 홀카드
+    this.phase = RULES.insurance && this.dealer[0].rank === 'A' ? 'insurance' : 'player';
+    if (this.phase === 'player') this.checkNaturals();
+    return this;
+  }
+
+  get upcard() { return this.dealer[0]; }
+  get hand() { return this.hands[this.active]; }
+
+  checkNaturals() {
+    const dealerBJ = isBlackjack(this.dealer);
+    if (dealerBJ || isBlackjack(this.hands[0].cards)) {
+      this.hands.forEach((h) => { h.done = true; });
+      this.phase = 'settle';
+    }
+  }
+
+  takeInsurance(amount) {
+    this.insurance = amount;
+    this.phase = 'player';
+    this.checkNaturals();
+  }
+
+  options() {
+    const h = this.hand;
+    if (!h || h.done) return [];
+    const first = h.cards.length === 2;
+    const out = ['hit', 'stand'];
+    if (first && (!h.fromSplit || RULES.doubleAfterSplit)) out.push('double');
+    if (first && isPair(h.cards) && this.hands.length < RULES.maxHands) out.push('split');
+    if (RULES.surrender && first && !h.fromSplit) out.push('surrender');
+    return [...new Set(out)];
+  }
+
+  hit() {
+    const h = this.hand;
+    h.cards.push(this.shoe.draw());
+    if (handValue(h.cards).busted || handValue(h.cards).total === 21) this.stand();
+    return this;
+  }
+
+  double() {
+    const h = this.hand;
+    h.bet *= 2;
+    h.doubled = true;
+    h.cards.push(this.shoe.draw());
+    this.stand();
+    return this;
+  }
+
+  surrender() {
+    this.hand.surrendered = true;
+    this.stand();
+    return this;
+  }
+
+  split() {
+    const h = this.hand;
+    const moved = h.cards.pop();
+    const fresh = {
+      cards: [moved], bet: h.bet, done: false, doubled: false,
+      surrendered: false, fromSplit: true,
+    };
+    h.fromSplit = true;
+    this.hands.splice(this.active + 1, 0, fresh);
+    h.cards.push(this.shoe.draw());
+    fresh.cards.push(this.shoe.draw());
+    // 에이스 스플릿은 각 한 장씩만
+    if (rankValue(moved.rank) === 11) {
+      h.done = true; fresh.done = true;
+      this.advance();
+    }
+    return this;
+  }
+
+  stand() {
+    this.hand.done = true;
+    this.advance();
+    return this;
+  }
+
+  advance() {
+    const next = this.hands.findIndex((h) => !h.done);
+    if (next === -1) { this.phase = 'dealer'; } else { this.active = next; }
+  }
+
+  // 딜러는 선택하지 않는다. 규칙이 전부다.
+  playDealer() {
+    const live = this.hands.some((h) => !h.surrendered && !handValue(h.cards).busted);
+    if (live) {
+      for (;;) {
+        const { total, soft } = handValue(this.dealer);
+        if (total < 17 || (total === 17 && soft && RULES.dealerHitsSoft17)) {
+          this.dealer.push(this.shoe.draw());
+        } else break;
+      }
+    }
+    this.phase = 'settle';
+    return this;
+  }
+
+  settle() {
+    const dv = handValue(this.dealer);
+    const dealerBJ = isBlackjack(this.dealer);
+    const results = [];
+    let net = 0;
+
+    if (this.insurance) {
+      const gain = dealerBJ ? this.insurance * 2 : -this.insurance;
+      net += gain;
+      results.push({ kind: 'insurance', text: dealerBJ ? '인슈어런스 적중' : '인슈어런스 실패', delta: gain });
+    }
+
+    for (const h of this.hands) {
+      const pv = handValue(h.cards);
+      const playerBJ = isBlackjack(h.cards) && !h.fromSplit;
+      let delta = 0, text = '';
+
+      if (h.surrendered) { delta = -h.bet / 2; text = '서렌더'; }
+      else if (pv.busted) { delta = -h.bet; text = '버스트'; }
+      else if (playerBJ && !dealerBJ) { delta = h.bet * RULES.blackjackPays; text = '블랙잭!'; }
+      else if (dealerBJ && !playerBJ) { delta = -h.bet; text = '딜러 블랙잭'; }
+      else if (dealerBJ && playerBJ) { delta = 0; text = '푸시'; }
+      else if (dv.busted) { delta = h.bet; text = '딜러 버스트'; }
+      else if (pv.total > dv.total) { delta = h.bet; text = '승'; }
+      else if (pv.total < dv.total) { delta = -h.bet; text = '패'; }
+      else { delta = 0; text = '푸시'; }
+
+      net += delta;
+      results.push({ kind: 'hand', text, delta, total: pv.total });
+    }
+
+    this.results = { results, net, dealerTotal: dv.total, dealerBJ };
+    return this.results;
+  }
+}
+// 포커 핸드 평가기.
+//
+// 핵심 아이디어: 족보를 정수 하나로 인코딩한다.
+//   점수 = 카테고리 * 16^5 + 킥커5 * 16^4 + ... + 킥커1
+// 16진 자리마다 카드 랭크(2~14)를 넣으면 비교가 정수 비교 한 번으로 끝난다.
+// 두 핸드의 우열을 가리는 복잡한 분기문이 전부 사라진다.
+
+const CATEGORY = [
+  '하이카드', '원페어', '투페어', '트리플', '스트레이트',
+  '플러시', '풀하우스', '포카드', '스트레이트 플러시',
+];
+
+const RANK_ORDER = { 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, J: 11, Q: 12, K: 13, A: 14 };
+const RANK_NAME = { 14: 'A', 13: 'K', 12: 'Q', 11: 'J', 10: '10' };
+const rankName = (v) => RANK_NAME[v] || String(v);
+
+function encode(category, kickers) {
+  let score = category;
+  for (let i = 0; i < 5; i++) score = score * 16 + (kickers[i] || 0);
+  return score;
+}
+
+// 정확히 5장을 평가한다.
+function score5(cards) {
+  const vals = cards.map((c) => RANK_ORDER[c.rank]).sort((a, b) => b - a);
+  const suits = cards.map((c) => c.suit);
+  const flush = suits.every((s) => s === suits[0]);
+
+  const uniq = [...new Set(vals)];
+  let straightHigh = 0;
+  if (uniq.length === 5) {
+    if (uniq[0] - uniq[4] === 4) straightHigh = uniq[0];
+    // A-2-3-4-5: 에이스를 1로 쓰는 유일한 예외
+    else if (uniq[0] === 14 && uniq[1] === 5 && uniq[4] === 2) straightHigh = 5;
+  }
+
+  const counts = {};
+  for (const v of vals) counts[v] = (counts[v] || 0) + 1;
+  // 개수 내림차순, 같으면 랭크 내림차순
+  const groups = Object.entries(counts)
+    .map(([v, n]) => ({ v: +v, n }))
+    .sort((a, b) => b.n - a.n || b.v - a.v);
+  const shape = groups.map((g) => g.n).join('');
+  const ordered = groups.map((g) => g.v);
+
+  if (straightHigh && flush) return encode(8, [straightHigh]);
+  if (shape === '41') return encode(7, ordered);
+  if (shape === '32') return encode(6, ordered);
+  if (flush) return encode(5, vals);
+  if (straightHigh) return encode(4, [straightHigh]);
+  if (shape === '311') return encode(3, ordered);
+  if (shape === '221') return encode(2, ordered);
+  if (shape === '2111') return encode(1, ordered);
+  return encode(0, vals);
+}
+
+// 7장 중 5장을 고르는 21가지 조합을 모두 시도한다.
+const COMBOS = (() => {
+  const out = [];
+  for (let a = 0; a < 7; a++) for (let b = a + 1; b < 7; b++)
+    for (let c = b + 1; c < 7; c++) for (let d = c + 1; d < 7; d++)
+      for (let e = d + 1; e < 7; e++) out.push([a, b, c, d, e]);
+  return out;
+})();
+
+function evaluate(cards) {
+  if (cards.length === 5) {
+    const s = score5(cards);
+    return { score: s, category: Math.floor(s / 16 ** 5), best: cards, name: describe(cards, s) };
+  }
+  let best = -1, bestCards = null;
+  for (const idx of COMBOS) {
+    const hand = idx.map((i) => cards[i]);
+    const s = score5(hand);
+    if (s > best) { best = s; bestCards = hand; }
+  }
+  return {
+    score: best,
+    category: Math.floor(best / 16 ** 5),
+    best: bestCards,
+    name: describe(bestCards, best),
+  };
+}
+
+function describe(cards, score) {
+  const cat = Math.floor(score / 16 ** 5);
+  const vals = cards.map((c) => RANK_ORDER[c.rank]).sort((a, b) => b - a);
+  const counts = {};
+  for (const v of vals) counts[v] = (counts[v] || 0) + 1;
+  const by = (n) => Object.keys(counts).filter((k) => counts[k] === n).map(Number).sort((a, b) => b - a);
+
+  switch (cat) {
+    case 8: return vals[0] === 14 && vals[1] === 13 ? '로열 플러시' : `${rankName(Math.max(...vals))} 스트레이트 플러시`;
+    case 7: return `${rankName(by(4)[0])} 포카드`;
+    case 6: return `${rankName(by(3)[0])} 풀하우스`;
+    case 5: return `${rankName(vals[0])} 하이 플러시`;
+    case 4: return `${rankName(vals[0] === 14 && vals[1] === 5 ? 5 : vals[0])} 하이 스트레이트`;
+    case 3: return `${rankName(by(3)[0])} 트리플`;
+    case 2: { const p = by(2); return `${rankName(p[0])}·${rankName(p[1])} 투페어`; }
+    case 1: return `${rankName(by(2)[0])} 원페어`;
+    default: return `${rankName(vals[0])} 하이카드`;
+  }
+}
+// 블랙잭 화면. 엔진은 위쪽에 전역으로 로드되어 있고 여기서는 표시만 담당한다.
+function mountBlackjack(root) {
+  root.innerHTML = `<div class="zone">
+    <h2>딜러</h2>
+    <div class="cards" id="dealerCards"></div>
+    <div class="total" id="dealerTotal">—</div>
+  </div>
+
+  <div class="zone">
+    <h2>내 패</h2>
+    <div id="seats"></div>
+  </div>
+
+  <div class="row" id="controls"></div>
+  <div id="coach"></div>
+  <p class="msg" id="msg">칩을 고르고 딜을 누르세요.</p>
+
+  <div class="rules">
+    <label class="sw"><input type="checkbox" id="hint" checked> 기본 전략 코치 표시</label><br>
+    규칙 — 덱 <code>6벌</code> · 딜러 소프트 17 <code>스탠드</code> · 블랙잭 <code>3:2</code> ·
+    더블 후 스플릿 <code>허용</code> · 스플릿 <code>4핸드</code>까지 · 레이트 서렌더 <code>허용</code><br>
+    이 규칙 조합의 하우스 엣지는 약 <b id="edge">0.5%</b>입니다. 기본 전략대로만 쳤을 때의 값이고,
+    시뮬레이션 20만 판에서 0.508%로 확인했습니다.
+    <span id="acc"></span>
+  </div>`;
+
+  const $ = (id) => document.getElementById(id);
+  const money = (n) => (n < 0 ? '-' : '') + Math.abs(n).toLocaleString();
+
+  let bank = 1000, pl = 0, bet = 25;
+  let shoe = new Shoe(RULES.decks);
+  let round = null, revealed = false;
+  let followed = 0, decided = 0;
+
+  function cardEl(card, faceDown = false) {
+    const d = document.createElement('div');
+    d.className = 'card';
+    d.innerHTML = faceDown ? BACK_SVG : cardSVG(card.rank, card.suit);
+    return d;
+  }
+
+  function totalText(cards, hidden = false) {
+    if (hidden) {
+      const v = handValue([cards[0]]);
+      return `<span>${v.total}</span> <span class="soft">+ ?</span>`;
+    }
+    const v = handValue(cards);
+    if (v.busted) return `<span class="bust">${v.total} 버스트</span>`;
+    if (isBlackjack(cards)) return `<span>21</span> <span class="soft">블랙잭</span>`;
+    return `<span>${v.total}</span>` + (v.soft ? ' <span class="soft">소프트</span>' : '');
+  }
+
+  function render() {
+    $('bank').textContent = money(bank);
+    const plEl = $('pl');
+    plEl.textContent = (pl > 0 ? '+' : '') + money(pl);
+    plEl.className = pl > 0 ? 'up' : pl < 0 ? 'dn' : '';
+    $('shoe').textContent = shoe.remaining;
+
+    const dc = $('dealerCards');
+    dc.innerHTML = '';
+    if (round) {
+      const hide = !revealed && round.dealer.length === 2;
+      round.dealer.forEach((c, i) => dc.appendChild(cardEl(c, hide && i === 1)));
+      $('dealerTotal').innerHTML = totalText(round.dealer, hide);
+    } else {
+      $('dealerTotal').textContent = '—';
+    }
+
+    const seats = $('seats');
+    seats.innerHTML = '';
+    if (!round) {
+      seats.innerHTML = '<p class="msg" style="margin:0">베팅을 기다리는 중입니다.</p>';
+    } else {
+      round.hands.forEach((h, i) => {
+        const box = document.createElement('div');
+        box.className = 'seat' + (round.phase === 'player' && i === round.active ? ' on' : '');
+        const label = round.hands.length > 1 ? `핸드 ${i + 1} · ` : '';
+        box.innerHTML = `<div class="tag">${label}베팅 <b>${money(h.bet)}</b>` +
+          (h.doubled ? ' · 더블' : '') + (h.surrendered ? ' · 서렌더' : '') + '</div>';
+        const cr = document.createElement('div');
+        cr.className = 'cards';
+        h.cards.forEach((c) => cr.appendChild(cardEl(c)));
+        box.appendChild(cr);
+        const tot = document.createElement('div');
+        tot.className = 'total';
+        tot.innerHTML = totalText(h.cards);
+        box.appendChild(tot);
+        if (h.verdict) {
+          const v = document.createElement('div');
+          v.className = 'verdict';
+          v.style.color = h.delta > 0 ? '#6fd39f' : h.delta < 0 ? '#ff8a7a' : 'var(--dim)';
+          v.textContent = `${h.verdict}  ${h.delta > 0 ? '+' : ''}${money(h.delta)}`;
+          box.appendChild(v);
+        }
+        seats.appendChild(box);
+      });
+    }
+
+    buildControls();
+    buildCoach();
+    $('acc').innerHTML = decided
+      ? ` 이번 세션 전략 일치율 <b>${Math.round(followed / decided * 100)}%</b> (${followed}/${decided})`
+      : '';
+  }
+
+  function btn(label, cls, fn, disabled = false) {
+    const b = document.createElement('button');
+    b.textContent = label;
+    if (cls) b.className = cls;
+    b.disabled = disabled;
+    b.onclick = fn;
+    return b;
+  }
+
+  function buildControls() {
+    const c = $('controls');
+    c.innerHTML = '';
+
+    if (!round) {
+      for (const v of [10, 25, 100]) {
+        const b = btn(String(v), `chip c${v}` + (bet === v ? ' on' : ''), () => { bet = v; render(); });
+        c.appendChild(b);
+      }
+      c.appendChild(btn('딜', 'go', deal, bank < bet));
+      if (bank < 10) c.appendChild(btn('자금 리셋', '', () => { bank = 1000; pl = 0; render(); }));
+      return;
+    }
+
+    if (round.phase === 'insurance') {
+      const half = Math.floor(round.hands[0].bet / 2);
+      c.appendChild(btn(`인슈어런스 ${money(half)}`, '', () => takeIns(half)));
+      c.appendChild(btn('사지 않음', 'go', () => takeIns(0)));
+      return;
+    }
+
+    if (round.phase === 'player') {
+      const o = round.options();
+      c.appendChild(btn('히트', '', () => move('hit'), !o.includes('hit')));
+      c.appendChild(btn('스탠드', 'go', () => move('stand'), !o.includes('stand')));
+      c.appendChild(btn('더블', '', () => move('double'), !o.includes('double') || bank < round.hand.bet));
+      c.appendChild(btn('스플릿', '', () => move('split'), !o.includes('split') || bank < round.hand.bet));
+      c.appendChild(btn('서렌더', 'warn', () => move('surrender'), !o.includes('surrender')));
+      return;
+    }
+
+    c.appendChild(btn('다음 판', 'go', () => { round = null; revealed = false; render(); }));
+  }
+
+  function buildCoach() {
+    const box = $('coach');
+    box.innerHTML = '';
+    if (!$('hint').checked || !round || round.phase !== 'player') return;
+    const o = round.options();
+    const a = basicStrategy(round.hand.cards, round.upcard, {
+      canDouble: o.includes('double'), canSplit: o.includes('split'),
+      canSurrender: o.includes('surrender'),
+    });
+    const d = document.createElement('div');
+    d.className = 'coach';
+    d.innerHTML = `기본 전략: <b>${a.label}</b>` + (a.why ? `<br><span class="why">${a.why}</span>` : '');
+    box.appendChild(d);
+  }
+
+  function recommended() {
+    const o = round.options();
+    return basicStrategy(round.hand.cards, round.upcard, {
+      canDouble: o.includes('double'), canSplit: o.includes('split'),
+      canSurrender: o.includes('surrender'),
+    }).code;
+  }
+
+  function deal() {
+    if (shoe.needsShuffle) { shoe.shuffle(); say('슈를 새로 섞었습니다.'); }
+    bank -= bet;                      // 판돈은 딜 시점에 빠져나간다
+    round = new Round(shoe, bet).deal();
+    revealed = false;
+    if (round.phase === 'settle') { finish(); return; }
+    if (round.phase === 'insurance') say('딜러 업카드가 에이스입니다. 인슈어런스를 살 수 있습니다.');
+    else say('');
+    render();
+  }
+
+  function takeIns(amount) {
+    if (amount) bank -= amount;
+    round.takeInsurance(amount);
+    if (round.phase === 'settle') { finish(); return; }
+    say(amount ? '인슈어런스를 걸었습니다.' : '');
+    render();
+  }
+
+  const CODE = { hit: 'H', stand: 'S', double: 'D', split: 'P', surrender: 'R' };
+
+  function move(action) {
+    const want = recommended();
+    decided++;
+    if (CODE[action] === want) followed++;
+
+    if (action === 'double' || action === 'split') bank -= round.hand.bet;
+    round[action]();
+
+    if (round.phase === 'dealer') {
+      revealed = true;
+      round.playDealer();
+    }
+    if (round.phase === 'settle') { finish(); return; }
+    render();
+  }
+
+  function finish() {
+    revealed = true;
+    if (round.phase === 'dealer') round.playDealer();
+    const r = round.settle();
+
+    let hi = 0;
+    for (const item of r.results) {
+      if (item.kind === 'hand') {
+        round.hands[hi].verdict = item.text;
+        round.hands[hi].delta = item.delta;
+        hi++;
+      }
+    }
+    // 판돈은 이미 빠져나가 있으므로, 되돌려받을 원금 + 순손익을 더한다.
+    // delta는 원금을 제외한 손익이다 (승 +bet, 패 -bet, 푸시 0, 블랙잭 +1.5bet).
+    const staked = round.hands.reduce((s, h) => s + h.bet, 0) + round.insurance;
+    bank += staked + r.net;
+    pl += r.net;
+
+    const ins = r.results.find((x) => x.kind === 'insurance');
+    const parts = r.results.filter((x) => x.kind === 'hand').map((x) => x.text);
+    say(`딜러 ${r.dealerTotal}${r.dealerBJ ? ' 블랙잭' : ''} — ${parts.join(', ')}` +
+        (ins ? ` · ${ins.text}` : '') +
+        ` · <b>${r.net > 0 ? '+' : ''}${money(r.net)}</b>`);
+    render();
+  }
+
+  function say(html) { $('msg').innerHTML = html; }
+
+  $('hint').addEventListener('change', render);
+  render();
+}
+// 헤즈업 홀덤 화면. 규칙을 단순화해 핸드 평가 과정이 잘 보이도록 했다.
+//   앤티를 걸고 → 홀카드 2장 + 플랍 3장을 본 뒤 → 콜 또는 폴드
+//   콜하면 턴·리버까지 열고 딜러와 7장씩으로 승부한다.
+
+function mountPoker(root) {
+  root.innerHTML = `
+    <div class="zone">
+      <h2>딜러</h2>
+      <div class="cards" id="pkDealer"></div>
+      <div class="total" id="pkDealerHand">—</div>
+    </div>
+    <div class="zone">
+      <h2>공유 카드</h2>
+      <div class="cards" id="pkBoard"></div>
+    </div>
+    <div class="zone">
+      <h2>내 패</h2>
+      <div class="cards" id="pkHole"></div>
+      <div class="total" id="pkMyHand">—</div>
+    </div>
+    <div class="row" id="pkControls"></div>
+    <p class="msg" id="pkMsg">앤티를 걸고 딜을 누르세요.</p>
+    <div class="rules">
+      금색 테두리가 <b>21가지 조합 중 선택된 최선의 5장</b>입니다.<br>
+      족보는 정수 하나로 인코딩해 비교합니다 —
+      <code>점수 = 카테고리 × 16⁵ + 킥커들</code>.
+      덕분에 "같은 투페어면 높은 페어가 이기고, 그것도 같으면 킥커로" 같은 분기가 전부 사라집니다.
+      <span id="pkStat"></span>
+    </div>`;
+
+  const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+  const SUITS = ['spade', 'heart', 'diamond', 'club'];
+  const $ = (id) => document.getElementById(id);
+  const money = (n) => (n < 0 ? '-' : '') + Math.abs(n).toLocaleString();
+
+  let bank = 1000, ante = 25, phase = 'bet';
+  let deck = [], hole = [], dealer = [], board = [], staked = 0;
+  let myEval = null, dEval = null, outcome = '';
+  let played = 0, won = 0;
+
+  function freshDeck() {
+    const d = [];
+    for (const s of SUITS) for (const r of RANKS) d.push({ rank: r, suit: s });
+    for (let i = d.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [d[i], d[j]] = [d[j], d[i]];
+    }
+    return d;
+  }
+
+  const key = (c) => c.rank + c.suit;
+
+  function cardEl(card, faceDown, highlight) {
+    const el = document.createElement('div');
+    el.className = 'card' + (highlight ? ' best' : '');
+    el.innerHTML = faceDown ? BACK_SVG : cardSVG(card.rank, card.suit);
+    return el;
+  }
+
+  function paint(el, cards, opts = {}) {
+    el.innerHTML = '';
+    const hi = new Set((opts.best || []).map(key));
+    cards.forEach((c, i) => {
+      const down = opts.hideAll && !opts.reveal;
+      el.appendChild(cardEl(c, down, !down && hi.has(key(c))));
+    });
+  }
+
+  function render() {
+    const reveal = phase === 'showdown';
+    paint($('pkDealer'), dealer, { hideAll: true, reveal, best: reveal && dEval ? dEval.best : [] });
+    paint($('pkBoard'), board, { best: reveal && myEval ? myEval.best : [] });
+    paint($('pkHole'), hole, { best: myEval ? myEval.best : [] });
+
+    $('pkMyHand').innerHTML = myEval
+      ? `<span>${myEval.name}</span>` : '—';
+    $('pkDealerHand').innerHTML = reveal && dEval
+      ? `<span>${dEval.name}</span>` : (dealer.length ? '<span class="soft">비공개</span>' : '—');
+
+    $('pkStat').innerHTML = played
+      ? ` 이번 세션 <b>${won}승 / ${played}판</b>` : '';
+
+    const c = $('pkControls');
+    c.innerHTML = '';
+    const btn = (label, cls, fn, dis) => {
+      const b = document.createElement('button');
+      b.textContent = label; if (cls) b.className = cls;
+      b.disabled = !!dis; b.onclick = fn; c.appendChild(b);
+    };
+
+    if (phase === 'bet') {
+      for (const v of [10, 25, 100]) {
+        btn(String(v), `chip c${v}` + (ante === v ? ' on' : ''), () => { ante = v; render(); });
+      }
+      btn('딜', 'go', deal, bank < ante * 3);
+      if (bank < 30) btn('자금 리셋', '', () => { bank = 1000; render(); });
+    } else if (phase === 'decide') {
+      btn(`콜 (${money(ante * 2)} 추가)`, 'go', call, bank < ante * 2);
+      btn('폴드', 'warn', fold);
+    } else {
+      btn('다음 판', 'go', reset);
+    }
+
+    document.getElementById('pkBank').textContent = money(bank);
+  }
+
+  function deal() {
+    deck = freshDeck();
+    hole = [deck.pop(), deck.pop()];
+    dealer = [deck.pop(), deck.pop()];
+    board = [deck.pop(), deck.pop(), deck.pop()];
+    bank -= ante; staked = ante;
+    myEval = evaluate([...hole, ...board]);
+    dEval = null; outcome = '';
+    phase = 'decide';
+    say(`플랍까지 <b>${myEval.name}</b>. 콜하면 턴과 리버를 봅니다.`);
+    render();
+  }
+
+  function fold() {
+    phase = 'showdown';
+    played++;
+    dEval = evaluate([...dealer, ...board]);
+    say(`폴드 — 앤티 <b>${money(ante)}</b>를 잃었습니다.`);
+    render();
+  }
+
+  function call() {
+    bank -= ante * 2; staked += ante * 2;
+    board.push(deck.pop(), deck.pop());
+    myEval = evaluate([...hole, ...board]);
+    dEval = evaluate([...dealer, ...board]);
+    phase = 'showdown';
+    played++;
+
+    let net;
+    if (myEval.score > dEval.score) { net = staked; won++; outcome = '승'; }
+    else if (myEval.score < dEval.score) { net = -staked; outcome = '패'; }
+    else { net = 0; outcome = '무승부'; }
+    bank += staked + net;
+
+    say(`<b>${myEval.name}</b> 대 ${dEval.name} — <b>${outcome}</b> ` +
+        `${net > 0 ? '+' : ''}${money(net)}`);
+    render();
+  }
+
+  function reset() {
+    phase = 'bet'; hole = []; dealer = []; board = [];
+    myEval = null; dEval = null;
+    say('앤티를 걸고 딜을 누르세요.');
+    render();
+  }
+
+  function say(html) { $('pkMsg').innerHTML = html; }
+
+  render();
+}
+
+// 입문용 카드 게임 4종. 각 모듈은 mount(root) 하나만 노출한다.
+// 난이도 순서: 워(선택 없음) → 하이로우(선택 하나) → 메모리(상태 관리) → 원카드(규칙 분기)
+
+const G_RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+const G_SUITS = ['spade', 'heart', 'diamond', 'club'];
+const G_VALUE = { A: 14, K: 13, Q: 12, J: 11, 10: 10, 9: 9, 8: 8, 7: 7, 6: 6, 5: 5, 4: 4, 3: 3, 2: 2 };
+
+function freshDeck52() {
+  const d = [];
+  for (const s of G_SUITS) for (const r of G_RANKS) d.push({ rank: r, suit: s });
+  for (let i = d.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [d[i], d[j]] = [d[j], d[i]];
+  }
+  return d;
+}
+
+function faceEl(card, cls = '') {
+  const el = document.createElement('div');
+  el.className = 'card ' + cls;
+  el.innerHTML = card ? cardSVG(card.rank, card.suit) : BACK_SVG;
+  return el;
+}
+
+const SUIT_KR = { spade: '스페이드', heart: '하트', diamond: '다이아', club: '클럽' };
+
+// ══ 1. 워 ═══════════════════════════════════════════════════
+// 플레이어의 선택이 하나도 없는 게임. 셔플과 큐만으로 완성된다.
+function mountWar(root) {
+  root.innerHTML = `
+    <div class="zone"><h2>상대</h2>
+      <div class="cards" id="wOpp"></div>
+      <div class="total" id="wOppN">26장</div></div>
+    <div class="zone"><h2>나</h2>
+      <div class="cards" id="wMe"></div>
+      <div class="total" id="wMeN">26장</div></div>
+    <div class="row" id="wCtl"></div>
+    <p class="msg" id="wMsg">카드를 뒤집으세요. 높은 쪽이 두 장 다 가져갑니다.</p>
+    <div class="rules">선택지가 없는 게임입니다. 그래서 셔플·비교·큐 처리만으로 완성되고,
+      코드가 가장 짧습니다. 무승부가 나면 각자 3장을 덮어놓고 4번째 카드로 다시 겨루는
+      <b>워</b>가 발생합니다.</div>`;
+
+  const $ = (id) => document.getElementById(id);
+  let me = [], opp = [], busy = false;
+
+  function start() {
+    const d = freshDeck52();
+    me = d.slice(0, 26); opp = d.slice(26);
+    busy = false;
+    $('wMsg').textContent = '카드를 뒤집으세요. 높은 쪽이 두 장 다 가져갑니다.';
+    show(null, null);
+  }
+
+  function show(a, b) {
+    $('wMe').innerHTML = ''; $('wOpp').innerHTML = '';
+    $('wMe').appendChild(a ? faceEl(a) : faceEl(null));
+    $('wOpp').appendChild(b ? faceEl(b) : faceEl(null));
+    $('wMeN').textContent = me.length + '장';
+    $('wOppN').textContent = opp.length + '장';
+    ctl();
+  }
+
+  function ctl() {
+    const c = $('wCtl'); c.innerHTML = '';
+    const over = !me.length || !opp.length;
+    const b = document.createElement('button');
+    b.className = 'go'; b.textContent = over ? '새 게임' : '뒤집기';
+    b.disabled = busy;
+    b.onclick = over ? start : () => flip();   // 직접 참조하면 Event가 pot으로 들어온다
+    c.appendChild(b);
+    if (!over) {
+      const a = document.createElement('button');
+      a.textContent = '10판 연속'; a.disabled = busy;
+      a.onclick = () => auto(10);
+      c.appendChild(a);
+    }
+  }
+
+  function flip(pot = []) {
+    if (!me.length || !opp.length) return;
+    const a = me.shift(), b = opp.shift();
+    pot.push(a, b);
+    show(a, b);
+    const va = G_VALUE[a.rank], vb = G_VALUE[b.rank];
+    if (va > vb) { me.push(...pot); $('wMsg').innerHTML = `<b>내가 획득</b> ${pot.length}장`; }
+    else if (vb > va) { opp.push(...pot); $('wMsg').innerHTML = `상대가 획득 ${pot.length}장`; }
+    else {
+      $('wMsg').innerHTML = '<b>워!</b> 각자 3장을 덮고 다시 겨룹니다.';
+      for (let i = 0; i < 3; i++) {
+        if (me.length > 1) pot.push(me.shift());
+        if (opp.length > 1) pot.push(opp.shift());
+      }
+      if (me.length && opp.length) {
+        busy = true;
+        setTimeout(() => { if (!root.isConnected) return; busy = false; flip(pot); }, 600);
+        return;
+      }
+    }
+    show(a, b);
+    if (!me.length) $('wMsg').innerHTML = '카드가 떨어졌습니다 — <b>패배</b>';
+    if (!opp.length) $('wMsg').innerHTML = '상대 카드가 떨어졌습니다 — <b>승리</b>';
+  }
+
+  function auto(n) {
+    busy = true;
+    let i = 0;
+    const tick = () => {
+      if (!root.isConnected) return;   // 게임 선택으로 빠져나간 경우
+      if (i++ >= n || !me.length || !opp.length) { busy = false; ctl(); return; }
+      busy = false; flip(); busy = true;
+      setTimeout(tick, 420);
+    };
+    tick();
+  }
+
+  start();
+}
+
+// ══ 2. 하이로우 ═════════════════════════════════════════════
+// 선택이 하나뿐인데, 그 하나를 잘하려면 남은 카드를 세야 한다.
+function mountHighLow(root) {
+  root.innerHTML = `
+    <div class="zone"><h2>현재 카드</h2>
+      <div class="cards" id="hCard"></div>
+      <div class="total" id="hStreak">연속 0 · 최고 0</div></div>
+    <div class="zone"><h2>남은 덱에서의 확률</h2>
+      <div id="hProb" class="probs"></div></div>
+    <div class="row" id="hCtl"></div>
+    <p class="msg" id="hMsg">다음 카드가 높을지 낮을지 고르세요.</p>
+    <div class="rules">확률은 <b>남은 카드를 실제로 세서</b> 계산합니다.
+      뽑힌 카드가 덱에서 빠지므로 매번 값이 달라집니다 — 조건부 확률이 눈에 보이는 예제입니다.
+      같은 숫자가 나오면 무승부로 넘어갑니다.</div>`;
+
+  const $ = (id) => document.getElementById(id);
+  let deck = [], cur = null, streak = 0, best = 0;
+
+  function start() {
+    deck = freshDeck52();
+    cur = deck.pop();
+    streak = 0;
+    render('다음 카드가 높을지 낮을지 고르세요.');
+  }
+
+  function counts() {
+    const v = G_VALUE[cur.rank];
+    let hi = 0, lo = 0, eq = 0;
+    for (const c of deck) {
+      const x = G_VALUE[c.rank];
+      if (x > v) hi++; else if (x < v) lo++; else eq++;
+    }
+    return { hi, lo, eq, n: deck.length };
+  }
+
+  function render(msg) {
+    $('hCard').innerHTML = '';
+    $('hCard').appendChild(faceEl(cur));
+    $('hStreak').textContent = `연속 ${streak} · 최고 ${best}`;
+    const { hi, lo, eq, n } = counts();
+    const pct = (x) => n ? (x / n * 100).toFixed(1) + '%' : '—';
+    $('hProb').innerHTML =
+      `<div class="pbar"><span>높다</span><i style="width:${n ? hi / n * 100 : 0}%"></i>` +
+      `<b>${pct(hi)}</b><em>${hi}장</em></div>` +
+      `<div class="pbar"><span>같다</span><i style="width:${n ? eq / n * 100 : 0}%"></i>` +
+      `<b>${pct(eq)}</b><em>${eq}장</em></div>` +
+      `<div class="pbar"><span>낮다</span><i style="width:${n ? lo / n * 100 : 0}%"></i>` +
+      `<b>${pct(lo)}</b><em>${lo}장</em></div>`;
+    if (msg) $('hMsg').innerHTML = msg;
+
+    const c = $('hCtl'); c.innerHTML = '';
+    const mk = (label, cls, fn, dis) => {
+      const b = document.createElement('button');
+      b.textContent = label; if (cls) b.className = cls;
+      b.disabled = !!dis; b.onclick = fn; c.appendChild(b);
+    };
+    if (!deck.length) { mk('새 게임', 'go', start); return; }
+    mk('높다', 'go', () => guess('hi'));
+    mk('낮다', '', () => guess('lo'));
+    mk('새 게임', '', start);
+  }
+
+  function guess(pick) {
+    const prev = cur;
+    cur = deck.pop();
+    const a = G_VALUE[prev.rank], b = G_VALUE[cur.rank];
+    let msg;
+    if (a === b) msg = `${prev.rank} → ${cur.rank} · 같은 숫자, 무승부`;
+    else if ((b > a) === (pick === 'hi')) {
+      streak++; best = Math.max(best, streak);
+      msg = `${prev.rank} → ${cur.rank} · <b>적중</b>`;
+    } else {
+      msg = `${prev.rank} → ${cur.rank} · 실패, 연속 ${streak}에서 끊김`;
+      streak = 0;
+    }
+    render(msg + (deck.length ? '' : ' · 덱을 모두 사용했습니다'));
+  }
+
+  start();
+}
+
+// ══ 3. 메모리 ══════════════════════════════════════════════
+// 게임 로직은 거의 없고, 전부 상태 관리 연습이다.
+function mountMemory(root) {
+  root.innerHTML = `
+    <div class="zone"><h2>짝을 찾으세요</h2>
+      <div class="grid16" id="mGrid"></div></div>
+    <div class="row" id="mCtl"></div>
+    <p class="msg" id="mMsg">카드를 두 장 뒤집어 같은 숫자를 찾으세요.</p>
+    <div class="rules">카드 한 장이 가지는 상태는 <code>덮임</code>, <code>뒤집힘</code>,
+      <code>맞춤</code> 세 가지입니다. 여기에 "두 장이 뒤집힌 동안은 입력을 막는다"는
+      잠금 상태가 하나 더 붙습니다. 화면과 데이터를 분리하지 않으면 금방 엉키는 구조라
+      상태 관리 연습에 좋습니다.</div>`;
+
+  const $ = (id) => document.getElementById(id);
+  let tiles = [], open = [], lock = false, moves = 0, found = 0;
+
+  function start() {
+    const d = freshDeck52().slice(0, 8);
+    const pairs = [];
+    for (const c of d) {
+      const other = G_SUITS.find((s) => s !== c.suit);
+      pairs.push({ ...c }, { rank: c.rank, suit: other });
+    }
+    for (let i = pairs.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pairs[i], pairs[j]] = [pairs[j], pairs[i]];
+    }
+    tiles = pairs.map((c) => ({ card: c, state: 'down' }));
+    open = []; lock = false; moves = 0; found = 0;
+    say('카드를 두 장 뒤집어 같은 숫자를 찾으세요.');
+    render();
+  }
+
+  function say(html) { $('mMsg').innerHTML = html; }
+
+  function render() {
+    const g = $('mGrid');
+    g.innerHTML = '';
+    tiles.forEach((t, i) => {
+      const el = document.createElement('button');
+      el.className = 'tilecard' + (t.state === 'matched' ? ' matched' : '');
+      el.setAttribute('aria-label', t.state === 'down' ? '덮인 카드' : `${t.card.rank}`);
+      el.innerHTML = t.state === 'down' ? BACK_SVG : cardSVG(t.card.rank, t.card.suit);
+      el.onclick = () => pick(i);
+      g.appendChild(el);
+    });
+    const c = $('mCtl'); c.innerHTML = '';
+    const b = document.createElement('button');
+    b.className = 'go'; b.textContent = '새 게임'; b.onclick = start;
+    c.appendChild(b);
+    const s = document.createElement('span');
+    s.className = 'msg'; s.style.margin = '0 0 0 6px';
+    s.textContent = `시도 ${moves} · 맞춘 짝 ${found}/8`;
+    c.appendChild(s);
+  }
+
+  function pick(i) {
+    const t = tiles[i];
+    if (lock || t.state !== 'down' || open.length >= 2) return;
+    t.state = 'up';
+    open.push(i);
+    render();
+    if (open.length < 2) return;
+
+    moves++;
+    const [a, b] = open;
+    if (tiles[a].card.rank === tiles[b].card.rank) {
+      tiles[a].state = tiles[b].state = 'matched';
+      open = []; found++;
+      say(`<b>${tiles[a].card.rank}</b> 짝을 찾았습니다.`);
+      render();
+      if (found === 8) say(`<b>완료!</b> ${moves}번 만에 모두 찾았습니다.`);
+    } else {
+      lock = true;
+      say('다릅니다. 다시 덮습니다.');
+      setTimeout(() => {
+        if (!root.isConnected) return;
+        tiles[a].state = tiles[b].state = 'down';
+        open = []; lock = false;
+        render();
+      }, 800);
+    }
+  }
+
+  start();
+}
+
+// ══ 4. 원카드 ══════════════════════════════════════════════
+// 특수 카드마다 다른 동작을 붙이는 구조. 규칙 분기 연습.
+function mountOneCard(root) {
+  root.innerHTML = `
+    <div class="zone"><h2>상대</h2>
+      <div class="cards" id="oOpp"></div></div>
+    <div class="zone"><h2>바닥</h2>
+      <div class="cards" id="oTop"></div>
+      <div class="total" id="oState"></div></div>
+    <div class="zone"><h2>내 패</h2>
+      <div class="cards" id="oHand"></div></div>
+    <div class="row" id="oCtl"></div>
+    <p class="msg" id="oMsg"></p>
+    <div class="rules">특수 카드 — <code>A</code> 3장 공격 · <code>2</code> 2장 공격 ·
+      <code>7</code> 무늬 지정 · <code>J</code> <code>Q</code> <code>K</code> 한 번 더.
+      공격을 받으면 같은 종류의 공격 카드로 받아칠 수 있고, 못 받아치면 쌓인 만큼 가져옵니다.</div>`;
+
+  const $ = (id) => document.getElementById(id);
+  let deck = [], mine = [], theirs = [], top = null, wildSuit = null;
+  let attack = 0, turn = 0, over = false, picking = false;
+
+  function start() {
+    deck = freshDeck52();
+    mine = deck.splice(0, 7);
+    theirs = deck.splice(0, 7);
+    do { top = deck.pop(); } while (['A', '2', '7', 'J', 'Q', 'K'].includes(top.rank));
+    wildSuit = null; attack = 0; turn = 0; over = false; picking = false;
+    say('같은 숫자나 같은 무늬를 내세요.');
+    render();
+  }
+
+  const activeSuit = () => wildSuit || top.suit;
+  const isAttack = (c) => c.rank === 'A' || c.rank === '2';
+  const again = (c) => ['J', 'Q', 'K'].includes(c.rank);
+
+  function legal(c) {
+    if (attack > 0) return isAttack(c);   // 공격 중에는 받아치기만
+    return c.rank === top.rank || c.suit === activeSuit();
+  }
+
+  function say(html) { $('oMsg').innerHTML = html; }
+
+  function render() {
+    $('oOpp').innerHTML = '';
+    theirs.forEach(() => $('oOpp').appendChild(faceEl(null, 'sm')));
+    $('oTop').innerHTML = '';
+    $('oTop').appendChild(faceEl(top));
+    $('oState').innerHTML =
+      `무늬 <b>${SUIT_KR[activeSuit()]}</b>` +
+      (wildSuit ? ' <span class="soft">지정됨</span>' : '') +
+      (attack ? ` · <span class="bust">공격 ${attack}장</span>` : '') +
+      ` · 덱 ${deck.length}장 · 상대 ${theirs.length}장`;
+
+    const h = $('oHand'); h.innerHTML = '';
+    mine.forEach((c, i) => {
+      const el = faceEl(c, legal(c) && turn === 0 && !over && !picking ? 'playable' : 'dull');
+      el.tabIndex = 0;
+      el.onclick = () => play(i);
+      el.onkeydown = (e) => { if (e.key === 'Enter') play(i); };
+      h.appendChild(el);
+    });
+
+    const c = $('oCtl'); c.innerHTML = '';
+    const mk = (label, cls, fn) => {
+      const b = document.createElement('button');
+      b.textContent = label; if (cls) b.className = cls; b.onclick = fn; c.appendChild(b);
+    };
+    if (over) { mk('새 게임', 'go', start); return; }
+    if (picking) {
+      for (const s of G_SUITS) mk(SUIT_KR[s], '', () => { wildSuit = s; picking = false; endTurn(); });
+      return;
+    }
+    if (turn === 0) {
+      const can = mine.some(legal);
+      mk(attack ? `${attack}장 받기` : '한 장 가져오기', can ? '' : 'go', drawPenalty);
+    }
+    mk('새 게임', '', start);
+  }
+
+  function drawPenalty() {
+    const n = attack || 1;
+    for (let i = 0; i < n; i++) { if (!deck.length) reshuffle(); if (deck.length) mine.push(deck.pop()); }
+    say(attack ? `공격을 받아 ${n}장 가져왔습니다.` : '한 장 가져왔습니다.');
+    attack = 0;
+    endTurn();
+  }
+
+  function reshuffle() {
+    if (deck.length) return;
+    deck = freshDeck52().filter((c) => !mine.some((m) => m.rank === c.rank && m.suit === c.suit));
+  }
+
+  function play(i) {
+    if (turn !== 0 || over || picking) return;
+    const c = mine[i];
+    if (!legal(c)) { say(attack ? '공격 중에는 A나 2로만 받아칠 수 있습니다.' : '낼 수 없는 카드입니다.'); return; }
+    mine.splice(i, 1);
+    top = c; wildSuit = null;
+    if (isAttack(c)) attack += c.rank === 'A' ? 3 : 2;
+    if (mine.length === 0) { over = true; say('<b>승리!</b> 카드를 모두 냈습니다.'); render(); return; }
+    if (c.rank === '7') { picking = true; say('무늬를 지정하세요.'); render(); return; }
+    if (again(c)) { say(`${c.rank} — 한 번 더 냅니다.`); render(); return; }
+    endTurn();
+  }
+
+  function endTurn() {
+    turn = 1;
+    render();
+    setTimeout(() => { if (root.isConnected) oppTurn(); }, 700);
+  }
+
+  function oppTurn() {
+    if (over) return;
+    // 상대 전략: 낼 수 있으면 특수 카드를 먼저, 없으면 가져온다
+    const playable = theirs.map((c, i) => ({ c, i })).filter(({ c }) =>
+      attack > 0 ? isAttack(c) : (c.rank === top.rank || c.suit === activeSuit()));
+    if (!playable.length) {
+      const n = attack || 1;
+      for (let k = 0; k < n; k++) { if (!deck.length) reshuffle(); if (deck.length) theirs.push(deck.pop()); }
+      say(attack ? `상대가 ${n}장 가져갔습니다.` : '상대가 한 장 가져갔습니다.');
+      attack = 0;
+      turn = 0; render(); return;
+    }
+    playable.sort((x, y) => (isAttack(y.c) ? 2 : again(y.c) ? 1 : 0) - (isAttack(x.c) ? 2 : again(x.c) ? 1 : 0));
+    const { c, i } = playable[0];
+    theirs.splice(i, 1);
+    top = c; wildSuit = null;
+    if (isAttack(c)) attack += c.rank === 'A' ? 3 : 2;
+    say(`상대가 ${c.rank} ${SUIT_KR[c.suit]}를 냈습니다.`);
+    if (!theirs.length) { over = true; say('<b>패배</b> — 상대가 카드를 모두 냈습니다.'); render(); return; }
+    if (c.rank === '7') {
+      const counts = {};
+      for (const t of theirs) counts[t.suit] = (counts[t.suit] || 0) + 1;
+      wildSuit = G_SUITS.sort((a, b) => (counts[b] || 0) - (counts[a] || 0))[0];
+      say(`상대가 7을 내고 ${SUIT_KR[wildSuit]}로 바꿨습니다.`);
+    }
+    if (again(c)) { render(); setTimeout(() => { if (root.isConnected) oppTurn(); }, 700); return; }
+    turn = 0;
+    render();
+  }
+
+  start();
+}
+
+// 카드운세.
+// 뒤집힌 52장 중 7장을 고르면 그 자리에서 열리고, 최선의 5장과 그 희귀도를 설명한다.
+// 평가기는 홀덤과 같은 것을 쓴다 — 게임이 달라도 규칙 모듈은 하나면 된다.
+
+// 7장으로 만든 최선의 족보가 각 카테고리일 확률 (%). 100만 회 시뮬레이션으로 검증한 값.
+const HAND_ODDS = [17.41, 43.82, 23.50, 4.83, 4.62, 3.03, 2.60, 0.168, 0.0311];
+
+const WHY = {
+  8: '같은 무늬 5장이 연속으로 이어졌습니다. 포커에서 가장 높은 족보입니다.',
+  7: '같은 숫자가 네 장 모였습니다.',
+  6: '같은 숫자 세 장과 다른 숫자 두 장이 함께 모였습니다.',
+  5: '같은 무늬가 다섯 장 모였습니다. 숫자는 이어지지 않아도 됩니다.',
+  4: '숫자 다섯 개가 연속으로 이어졌습니다. 무늬는 달라도 됩니다.',
+  3: '같은 숫자가 세 장 모였습니다.',
+  2: '같은 숫자 두 장짜리 짝이 두 벌 나왔습니다.',
+  1: '같은 숫자 두 장이 짝을 이뤘습니다.',
+  0: '짝도 연속도 같은 무늬도 없어, 가장 높은 카드로만 겨룹니다.',
+};
+
+function luckGrade(betterPct) {
+  if (betterPct < 0.2) return { label: '경이로운 행운', tone: 'gold' };
+  if (betterPct < 3) return { label: '아주 운이 좋음', tone: 'gold' };
+  if (betterPct < 10) return { label: '운이 좋음', tone: 'good' };
+  if (betterPct < 35) return { label: '평범', tone: 'flat' };
+  return { label: '아쉬움', tone: 'flat' };
+}
+
+function mountDraw7(root) {
+  root.innerHTML = `
+    <div class="zone">
+      <h2 id="dHead">덮인 카드 52장 — 일곱 장을 고르세요</h2>
+      <div class="deckgrid" id="dGrid"></div>
+    </div>
+    <div class="zone" id="dResultZone" style="display:none">
+      <h2>뽑은 일곱 장</h2>
+      <div class="cards" id="dPicked"></div>
+      <div id="dReport"></div>
+    </div>
+    <div class="row" id="dCtl"></div>
+    <p class="msg" id="dMsg">어느 자리에 무엇이 있는지는 아무도 모릅니다.</p>
+    <div class="rules">확률은 <b>7장으로 만든 최선의 5장</b> 기준입니다.
+      5장만 받는 경우와는 값이 다릅니다 — 장수가 늘면 좋은 족보가 나올 여지도 늘어나기 때문입니다.
+      표시된 수치는 100만 회 시뮬레이션으로 확인한 값입니다.
+      <span id="dTally"></span>
+    </div>`;
+
+  const $ = (id) => document.getElementById(id);
+  let deck = [], picked = [], done = false;
+  let draws = 0, bestSoFar = -1, bestName = '';
+
+  function start() {
+    deck = freshDeck52();
+    picked = []; done = false;
+    $('dResultZone').style.display = 'none';
+    $('dHead').textContent = '덮인 카드 52장 — 일곱 장을 고르세요';
+    say('어느 자리에 무엇이 있는지는 아무도 모릅니다.');
+    render();
+  }
+
+  function say(html) { $('dMsg').innerHTML = html; }
+
+  function render() {
+    const g = $('dGrid');
+    g.innerHTML = '';
+    deck.forEach((c, i) => {
+      const el = document.createElement('button');
+      const chosen = picked.includes(i);
+      el.className = 'slot' + (chosen ? ' chosen' : '');
+      el.innerHTML = chosen || done ? cardSVG(c.rank, c.suit) : BACK_SVG;
+      el.disabled = done || chosen;
+      el.setAttribute('aria-label', chosen ? `${c.rank} 선택됨` : `${i + 1}번 자리`);
+      el.onclick = () => pick(i);
+      g.appendChild(el);
+    });
+
+    const c = $('dCtl'); c.innerHTML = '';
+    const mk = (label, cls, fn) => {
+      const b = document.createElement('button');
+      b.textContent = label; if (cls) b.className = cls; b.onclick = fn; c.appendChild(b);
+    };
+    if (!done) {
+      mk('무작위로 채우기', '', fillRandom);
+      if (picked.length) mk('선택 취소', '', () => { picked = []; render(); say('다시 고르세요.'); });
+    } else {
+      mk('다시 뽑기', 'go', start);
+    }
+
+    $('dTally').innerHTML = draws
+      ? ` 지금까지 <b>${draws}회</b> 뽑았고, 최고 기록은 <b>${bestName}</b>입니다.`
+      : '';
+  }
+
+  function fillRandom() {
+    while (picked.length < 7) {
+      const i = Math.floor(Math.random() * 52);
+      if (!picked.includes(i)) picked.push(i);
+    }
+    render();
+    reveal();
+  }
+
+  function pick(i) {
+    if (done || picked.includes(i)) return;
+    picked.push(i);
+    if (picked.length < 7) {
+      say(`${picked.length}장 선택 — ${7 - picked.length}장 남았습니다.`);
+      render();
+      return;
+    }
+    render();
+    reveal();
+  }
+
+  function reveal() {
+    done = true;
+    draws++;
+    const cards = picked.map((i) => deck[i]);
+    const r = evaluate(cards);
+
+    if (r.score > bestSoFar) { bestSoFar = r.score; bestName = r.name; }
+
+    const key = (c) => c.rank + c.suit;
+    const bestSet = new Set(r.best.map(key));
+    const unused = cards.filter((c) => !bestSet.has(key(c)));
+
+    $('dHead').textContent = '뽑은 자리';
+    $('dResultZone').style.display = '';
+    const row = $('dPicked');
+    row.innerHTML = '';
+    cards.forEach((c) => {
+      const el = document.createElement('div');
+      el.className = 'card' + (bestSet.has(key(c)) ? ' best' : ' dull');
+      el.innerHTML = cardSVG(c.rank, c.suit);
+      row.appendChild(el);
+    });
+
+    const odds = HAND_ODDS[r.category];
+    const better = HAND_ODDS.slice(r.category + 1).reduce((a, b) => a + b, 0);
+    const grade = luckGrade(better);
+    const oneIn = Math.round(100 / odds);
+
+    $('dReport').innerHTML = `
+      <div class="verdictbox ${grade.tone}">
+        <div class="vname">${r.name}</div>
+        <div class="vgrade">${grade.label}</div>
+      </div>
+      <p class="vwhy">${WHY[r.category]}</p>
+      <div class="odds">
+        <div><span>이 족보가 나올 확률</span><b>${odds}%</b><em>약 ${oneIn}번에 한 번</em></div>
+        <div><span>이보다 좋은 패가 나올 확률</span><b>${better.toFixed(2)}%</b>
+             <em>${better < 50 ? '상위 ' + better.toFixed(1) + '%' : '흔한 편'}</em></div>
+      </div>
+      <p class="vwhy">금색 테두리 다섯 장이 <b>21가지 조합 중 선택된 최선</b>입니다.` +
+      (unused.length
+        ? ` 나머지 ${unused.map((c) => c.rank).join('·')}는 쓰이지 않았습니다.`
+        : '') + '</p>';
+
+    say(`<b>${r.name}</b> — ${grade.label}`);
+    render();
+  }
+
+  start();
+}
+
+// 카드로 보는 오늘의 운세.
+//
+// 기술적으로 눈여겨볼 점은 시드입니다. 날짜(YYYYMMDD)를 난수 시드로 쓰기 때문에
+// 같은 날 몇 번을 열어도 결과가 같습니다. 저장소도 서버도 없이 "하루 한 번"이 성립합니다.
+// 이게 시드 고정 난수의 쓸모입니다 — 무작위인데 재현 가능한 것.
+
+const SUIT_LORE = {
+  heart: {
+    name: '하트', theme: '마음과 관계',
+    caution: '감정이 앞설 수 있습니다.',
+    advice: '주변 사람에게 먼저 말을 건네보세요.',
+  },
+  diamond: {
+    name: '다이아', theme: '재물과 실리',
+    caution: '작은 지출이 새어나갈 수 있습니다.',
+    advice: '숫자를 한 번 더 확인하면 이득이 됩니다.',
+  },
+  club: {
+    name: '클럽', theme: '활동과 성취',
+    caution: '일을 벌이다 마무리를 놓칠 수 있습니다.',
+    advice: '움직이면 움직인 만큼 결과가 붙습니다.',
+  },
+  spade: {
+    name: '스페이드', theme: '과제와 판단',
+    caution: '고민이 길어지면 기회가 지나갑니다.',
+    advice: '어려운 쪽을 먼저 처리하면 하루가 가벼워집니다.',
+  },
+};
+
+const RANK_LORE = {
+  A:  { key: '시작',   today: '새로 손대기 좋은 날입니다.',           caution: '욕심내 한꺼번에 벌이지 마세요.', advice: '가장 작은 첫 걸음만 정하세요.' },
+  2:  { key: '협력',   today: '혼자보다 둘일 때 잘 풀립니다.',        caution: '기대를 말하지 않으면 어긋납니다.', advice: '필요한 것을 분명히 말하세요.' },
+  3:  { key: '확장',   today: '하던 일이 한 뼘 넓어집니다.',          caution: '벌린 만큼 관리가 따라야 합니다.', advice: '하나만 더 늘리는 선에서 멈추세요.' },
+  4:  { key: '안정',   today: '무리하지 않아도 되는 흐름입니다.',      caution: '익숙함에 안주하기 쉽습니다.',   advice: '기반을 정리해두기 좋은 날입니다.' },
+  5:  { key: '변화',   today: '예정에 없던 방향이 열립니다.',         caution: '흔들리다 중심을 놓칠 수 있습니다.', advice: '바꿀 것 하나만 골라 바꾸세요.' },
+  6:  { key: '조정',   today: '어긋났던 것이 제자리를 찾습니다.',      caution: '남 눈치를 너무 보게 됩니다.',   advice: '균형은 양보가 아니라 조율입니다.' },
+  7:  { key: '성찰',   today: '속도를 늦출수록 잘 보입니다.',         caution: '생각만 하다 하루가 갑니다.',    advice: '한 가지는 반드시 실행하세요.' },
+  8:  { key: '추진',   today: '밀어붙이면 통하는 날입니다.',          caution: '주변 속도를 앞질러 갑니다.',    advice: '한 번쯤 뒤를 돌아보세요.' },
+  9:  { key: '결실',   today: '오래 끌던 일이 마무리에 닿습니다.',     caution: '마지막에 마음이 급해집니다.',   advice: '끝맺음에 시간을 더 쓰세요.' },
+  10: { key: '완성',   today: '한 매듭이 지어지는 날입니다.',         caution: '다음을 미리 걱정하게 됩니다.',  advice: '끝난 것을 충분히 인정해주세요.' },
+  J:  { key: '소식',   today: '뜻밖의 연락이나 정보가 들어옵니다.',    caution: '설익은 소식에 흔들릴 수 있습니다.', advice: '들은 것은 하루 묵혀 판단하세요.' },
+  Q:  { key: '통찰',   today: '보이지 않던 사정이 이해됩니다.',       caution: '남의 사정을 떠안기 쉽습니다.',  advice: '조언은 하되 대신 짊어지지 마세요.' },
+  K:  { key: '결단',   today: '미뤄둔 결정을 내리기 좋습니다.',       caution: '독단으로 흐를 수 있습니다.',    advice: '정했으면 한 사람에게는 알리세요.' },
+};
+
+const SPOTS = [
+  { title: '오늘의 기운', field: 'today' },
+  { title: '조심할 것', field: 'caution' },
+  { title: '오늘의 조언', field: 'advice' },
+];
+
+function mountFortune(root) {
+  root.innerHTML = `
+    <div class="zone">
+      <h2 id="fHead">카드 세 장을 고르세요</h2>
+      <div class="deckgrid" id="fGrid"></div>
+    </div>
+    <div id="fResult" style="display:none">
+      <div class="spots" id="fSpots"></div>
+      <div class="zone">
+        <div class="odds">
+          <div><span>오늘의 무늬</span><b id="fSuit">—</b><em id="fSuitWhy"></em></div>
+          <div><span>오늘의 숫자</span><b id="fNum">—</b><em>세 장의 합에서</em></div>
+        </div>
+      </div>
+    </div>
+    <div class="row" id="fCtl"></div>
+    <p class="msg" id="fMsg"></p>
+    <div class="rules">
+      날짜를 난수 시드로 쓰기 때문에 <b>같은 날에는 몇 번을 열어도 같은 카드</b>가 나옵니다.
+      저장소도 서버도 없이 "하루 한 번"이 성립하는 거죠 —
+      무작위인데 재현 가능하다는 시드 고정 난수의 성질을 그대로 쓴 예입니다.
+      재미로 보는 것이니 결과에 너무 마음 쓰지는 마세요.
+      <span id="fMode"></span>
+    </div>`;
+
+  const $ = (id) => document.getElementById(id);
+  let deck = [], picked = [], done = false, daily = true;
+
+  function dateKey() {
+    const d = new Date();
+    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  }
+
+  function shuffled(seed) {
+    const rand = mulberry32(seed);
+    const d = [];
+    for (const s of G_SUITS) for (const r of G_RANKS) d.push({ rank: r, suit: s });
+    for (let i = d.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [d[i], d[j]] = [d[j], d[i]];
+    }
+    return d;
+  }
+
+  function start(useDaily = true) {
+    daily = useDaily;
+    deck = shuffled(useDaily ? dateKey() : Math.floor(Math.random() * 1e9));
+    picked = []; done = false;
+    $('fResult').style.display = 'none';
+    $('fHead').textContent = '카드 세 장을 고르세요';
+    const d = new Date();
+    say(daily
+      ? `${d.getMonth() + 1}월 ${d.getDate()}일의 배열입니다. 세 장을 고르세요.`
+      : '재미로 한 번 더 — 이번엔 무작위 배열입니다.');
+    render();
+  }
+
+  function say(html) { $('fMsg').innerHTML = html; }
+
+  function render() {
+    const g = $('fGrid');
+    g.innerHTML = '';
+    deck.forEach((c, i) => {
+      const el = document.createElement('button');
+      const chosen = picked.includes(i);
+      el.className = 'slot' + (chosen ? ' chosen' : '');
+      el.innerHTML = chosen ? cardSVG(c.rank, c.suit) : BACK_SVG;
+      el.disabled = done || chosen;
+      el.setAttribute('aria-label', chosen ? `${c.rank} 선택됨` : `${i + 1}번 자리`);
+      el.onclick = () => pick(i);
+      g.appendChild(el);
+    });
+
+    const c = $('fCtl'); c.innerHTML = '';
+    const mk = (label, cls, fn) => {
+      const b = document.createElement('button');
+      b.textContent = label; if (cls) b.className = cls; b.onclick = fn; c.appendChild(b);
+    };
+    if (!done) {
+      mk('아무 데나 세 장', '', () => {
+        while (picked.length < 3) {
+          const i = Math.floor(Math.random() * 52);
+          if (!picked.includes(i)) picked.push(i);
+        }
+        render(); reveal();
+      });
+      if (picked.length) mk('다시 고르기', '', () => { picked = []; render(); });
+    } else {
+      mk('오늘의 운세 다시 보기', 'go', () => start(true));
+      mk('재미로 한 번 더', '', () => start(false));
+    }
+    $('fMode').innerHTML = done && !daily
+      ? ' 지금 보고 계신 것은 <b>무작위 배열</b>입니다.' : '';
+  }
+
+  function pick(i) {
+    if (done || picked.includes(i)) return;
+    picked.push(i);
+    if (picked.length < 3) {
+      say(`${picked.length}장 — ${3 - picked.length}장 더 고르세요.`);
+      render();
+      return;
+    }
+    render();
+    reveal();
+  }
+
+  function reveal() {
+    done = true;
+    const cards = picked.map((i) => deck[i]);
+    $('fHead').textContent = '고른 세 장';
+    $('fResult').style.display = '';
+
+    const wrap = $('fSpots');
+    wrap.innerHTML = '';
+    cards.forEach((c, i) => {
+      const spot = SPOTS[i];
+      const suit = SUIT_LORE[c.suit];
+      const rank = RANK_LORE[c.rank];
+      const body = spot.field === 'today'
+        ? `${suit.theme}에 <b>${rank.key}</b>의 기운이 돕니다. ${rank.today}`
+        : spot.field === 'caution'
+          ? `${suit.caution} ${rank.caution}`
+          : `${rank.advice} ${suit.advice}`;
+
+      const el = document.createElement('div');
+      el.className = 'spot';
+      el.innerHTML =
+        `<div class="spotcard">${cardSVG(c.rank, c.suit)}</div>` +
+        `<div class="spottext"><h3>${spot.title}</h3>` +
+        `<div class="spotcaption">${c.rank} ${suit.name} · ${rank.key}</div>` +
+        `<p>${body}</p></div>`;
+      wrap.appendChild(el);
+    });
+
+    // 오늘의 무늬: 세 장 중 가장 많이 나온 무늬 (동수면 첫 장)
+    const tally = {};
+    for (const c of cards) tally[c.suit] = (tally[c.suit] || 0) + 1;
+    const topSuit = Object.keys(tally).sort((a, b) => tally[b] - tally[a])[0];
+    $('fSuit').textContent = SUIT_LORE[topSuit].name;
+    $('fSuitWhy').textContent = tally[topSuit] > 1
+      ? `${tally[topSuit]}장이 몰렸습니다` : SUIT_LORE[topSuit].theme;
+
+    const sum = cards.reduce((s, c) => s + G_VALUE[c.rank], 0);
+    $('fNum').textContent = (sum % 9) + 1;
+
+    say(`${SUIT_LORE[topSuit].theme}이(가) 오늘의 축입니다.`);
+    render();
+  }
+
+  start(true);
+}
+
+// ── 허브 ──────────────────────────────────────────────────
+const GAMES = [
+  {
+    id: 'war', title: '워', mount: mountWar,
+    desc: '카드를 한 장씩 뒤집어 높은 쪽이 가져갑니다. 플레이어가 고를 것이 하나도 없습니다.',
+    teach: '셔플 · 비교 · 큐',
+    peek: [['A', 'spade'], ['7', 'heart']],
+    meters: '',
+  },
+  {
+    id: 'highlow', title: '하이로우', mount: mountHighLow,
+    desc: '다음 카드가 높을지 낮을지 맞힙니다. 남은 카드를 세면 확률이 그대로 보입니다.',
+    teach: '조건부 확률',
+    peek: [['9', 'diamond'], ['K', 'club']],
+    meters: '',
+  },
+  {
+    id: 'memory', title: '메모리', mount: mountMemory,
+    desc: '카드를 두 장씩 뒤집어 같은 숫자를 찾습니다. 규칙은 단순하고 상태는 복잡합니다.',
+    teach: '2차원 배열 · 상태 관리',
+    peek: [['Q', 'heart'], ['Q', 'spade']],
+    meters: '',
+  },
+  {
+    id: 'onecard', title: '원카드', mount: mountOneCard,
+    desc: '같은 숫자나 무늬를 내려놓습니다. A·2 공격, 7 무늬 지정, J·Q·K는 한 번 더.',
+    teach: '규칙 분기 · 특수 카드',
+    peek: [['2', 'spade'], ['7', 'diamond'], ['J', 'heart']],
+    meters: '',
+  },
+  {
+    id: 'blackjack', title: '블랙잭', mount: mountBlackjack,
+    desc: '딜러보다 21에 가깝게. 히트·스탠드·더블·스플릿·서렌더에 기본 전략 코치가 붙습니다.',
+    teach: '조건 분기 · 소프트/하드 판정',
+    peek: [['A', 'spade'], ['K', 'heart']],
+    meters: '<span>자금 <b id="bank">1,000</b></span>'
+          + '<span>손익 <b id="pl">0</b></span>'
+          + '<span>슈 <b id="shoe">312</b>장</span>',
+  },
+  {
+    id: 'poker', title: '홀덤 포커', mount: mountPoker,
+    desc: '홀카드 2장과 공유 카드 5장, 총 7장에서 최선의 5장을 찾아 딜러와 겨룹니다.',
+    teach: '조합 탐색 · 정수 인코딩 비교',
+    peek: [['Q', 'diamond'], ['J', 'club'], ['10', 'spade']],
+    meters: '<span>자금 <b id="pkBank">1,000</b></span>',
+  },
+  {
+    id: 'draw7', title: '카드운세', mount: mountDraw7,
+    desc: '덮인 52장에서 일곱 장을 고르면 어떤 족보가 나왔는지, 얼마나 운이 좋은지 알려줍니다.',
+    teach: '확률 · 조합 · 희귀도',
+    peek: [['A', 'heart'], ['A', 'spade'], ['A', 'club']],
+    meters: '',
+  },
+  {
+    id: 'fortune', title: '오늘의 운세', mount: mountFortune,
+    desc: '카드 세 장으로 오늘의 기운·주의점·조언을 봅니다. 같은 날에는 늘 같은 결과입니다.',
+    teach: '시드 고정 난수 · 재현성',
+    peek: [['Q', 'heart'], ['7', 'spade'], ['A', 'diamond']],
+    meters: '',
+  },
+];
+
+const stage = document.getElementById('stage');
+const meters = document.getElementById('meters');
+
+function showMenu() {
+  meters.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'picker';
+  GAMES.forEach((g, i) => {
+    const t = document.createElement('button');
+    t.className = 'tile';
+    t.innerHTML = `<h3><span class="no">${String(i + 1).padStart(2, '0')}</span>${g.title}</h3><p>${g.desc}</p>` +
+      `<div class="mini">${g.peek.map(([r, s]) => `<div>${cardSVG(r, s)}</div>`).join('')}</div>` +
+      `<div class="teach">${g.teach}</div>`;
+    t.onclick = () => openGame(g);
+    grid.appendChild(t);
+  });
+  stage.innerHTML = '';
+  stage.appendChild(grid);
+}
+
+function openGame(game) {
+  meters.innerHTML = game.meters + ' <button class="back" id="back">← 게임 선택</button>';
+  stage.innerHTML = '';
+  const root = document.createElement('div');
+  stage.appendChild(root);
+  game.mount(root);
+  document.getElementById('back').onclick = showMenu;
+}
+
+document.getElementById('logo').onclick = showMenu;
+showMenu();
+</script>
+</body>
+</html>

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>고스톱</title>
+<style>
+  :root{
+    --mat:#123a2c; --mat-2:#0c2a1f; --mat-line:#1d5340;
+    --tile:#f3ead7; --tile-edge:#cbbb9a; --ink:#17130f;
+    --vermilion:#c4372b; --indigo:#2a4a8c; --ochre:#c2932c; --moss:#4a6b45;
+    --dim:#8ba898;
+    --kr: "Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+    --mono: ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; padding:14px; font-family:var(--kr); color:var(--tile);
+    background:
+      radial-gradient(ellipse at 50% -10%, #1a4d3a 0%, transparent 62%),
+      var(--mat);
+    background-color:var(--mat);
+  }
+  .wrap{max-width:760px;margin:0 auto}
+
+  /* ── 상단 계기판 ── */
+  .bar{
+    display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+    padding-bottom:10px;border-bottom:1px solid var(--mat-line);margin-bottom:14px;
+  }
+  .brand{font-size:19px;font-weight:800;letter-spacing:-.02em}
+  .brand em{font-style:normal;color:var(--ochre)}
+  .stat{font-family:var(--mono);font-size:12px;color:var(--dim);margin-left:auto}
+  .stat b{color:var(--tile);font-weight:600}
+
+  /* ── 진영 ── */
+  .side{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:9px 11px;border:1px solid var(--mat-line);border-radius:8px;
+    background:var(--mat-2);margin-bottom:12px;
+  }
+  .side.active{border-color:var(--ochre)}
+  .who{font-size:12px;font-weight:700;letter-spacing:.06em}
+  .pts{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--ochre);line-height:1}
+  .tally{display:flex;gap:9px;font-family:var(--mono);font-size:11px;color:var(--dim)}
+  .tally b{color:var(--tile);font-weight:600}
+
+  /* ── 바닥 ── */
+  .field-label{font-size:11px;letter-spacing:.14em;color:var(--dim);margin:0 0 7px}
+  .field{
+    display:flex;flex-wrap:wrap;gap:6px;min-height:96px;
+    padding:10px;border-radius:9px;
+    background:
+      repeating-linear-gradient(45deg,transparent,transparent 7px,rgba(255,255,255,.014) 7px,rgba(255,255,255,.014) 14px),
+      var(--mat-2);
+    border:1px solid var(--mat-line);
+  }
+  .field:empty::after{content:"바닥이 비었습니다";color:var(--dim);font-size:12px}
+
+  /* ── 카드 ── */
+  .card{
+    position:relative;width:56px;height:84px;flex:0 0 auto;
+    border-radius:5px;overflow:hidden;background:var(--tile);
+    box-shadow:0 2px 0 var(--tile-edge);cursor:default;user-select:none;
+  }
+  .card svg{display:block;width:100%;height:100%}
+  .card[data-k="gwang"]{box-shadow:0 2px 0 var(--ochre)}
+  .hand .card{cursor:pointer;transition:transform .12s ease}
+  .hand .card:hover,.hand .card:focus-visible{transform:translateY(-7px)}
+  .hand .card:focus-visible{outline:2px solid var(--ochre);outline-offset:2px}
+  .card.pick{cursor:pointer;animation:throb 1s ease-in-out infinite}
+  .card.hint::before{
+    content:"";position:absolute;inset:-3px;border:1.5px dashed var(--ochre);border-radius:7px
+  }
+  @keyframes throb{50%{box-shadow:0 0 0 3px var(--ochre)}}
+  @keyframes drop{from{transform:translateY(-16px) rotate(-4deg);opacity:0}}
+  .card.new{animation:drop .22s ease-out}
+
+  /* ── 손패 ── */
+  .hand{display:flex;flex-wrap:wrap;gap:6px;padding:10px 0 2px;min-height:90px}
+
+  /* ── 도장: 이 화면의 시그니처 ── */
+  .seal{
+    position:fixed;left:50%;top:42%;translate:-50% -50%;z-index:40;pointer-events:none;
+    background:var(--vermilion);color:#fff;font-weight:800;font-size:30px;
+    letter-spacing:.1em;padding:16px 20px;border-radius:6px;
+    border:2.5px solid rgba(255,255,255,.5);
+    animation:stamp .55s cubic-bezier(.2,1.6,.4,1) forwards;
+  }
+  @keyframes stamp{
+    0%{scale:2.2;rotate:-14deg;opacity:0}
+    35%{scale:1;rotate:-6deg;opacity:1}
+    75%{opacity:1}
+    100%{opacity:0;scale:1.04}
+  }
+
+  /* ── 조작 ── */
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  button{
+    font-family:var(--kr);font-size:13px;font-weight:700;
+    padding:9px 15px;border-radius:6px;border:1px solid var(--mat-line);
+    background:var(--mat-2);color:var(--tile);cursor:pointer
+  }
+  button:hover{border-color:var(--ochre)}
+  button:focus-visible{outline:2px solid var(--ochre);outline-offset:2px}
+  button.hot{background:var(--vermilion);border-color:var(--vermilion);color:#fff}
+  button.calm{background:var(--tile);color:var(--ink);border-color:var(--tile)}
+  .msg{font-size:12.5px;color:var(--dim);min-height:18px;margin-top:10px;line-height:1.5}
+  .msg b{color:var(--ochre)}
+
+  /* ── 결과 ── */
+  .over{
+    position:fixed;inset:0;z-index:50;display:grid;place-items:center;
+    background:rgba(6,20,15,.86);padding:20px
+  }
+  .panel{
+    background:var(--mat);border:1px solid var(--mat-line);border-radius:11px;
+    padding:22px;max-width:340px;width:100%;text-align:center
+  }
+  .panel h2{margin:0 0 4px;font-size:15px;letter-spacing:.1em;color:var(--dim);font-weight:600}
+  .panel .big{font-family:var(--mono);font-size:44px;font-weight:800;color:var(--ochre);line-height:1}
+  .panel .tags{font-size:12.5px;color:var(--dim);margin:8px 0 18px;word-break:keep-all}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  @media (max-width:420px){.card{width:50px;height:75px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <div class="brand">고<em>스톱</em></div>
+    <div class="stat">더미 <b id="deckN">0</b>장 · 판 <b id="seedN">-</b></div>
+  </div>
+
+  <div class="side" id="sideAi">
+    <span class="who">상대</span>
+    <span class="pts" id="aiPts">0</span>
+    <span class="tally" id="aiTally"></span>
+  </div>
+
+  <p class="field-label">바닥</p>
+  <div class="field" id="field"></div>
+
+  <div class="side" id="sideMe" style="margin-top:12px">
+    <span class="who">나</span>
+    <span class="pts" id="mePts">0</span>
+    <span class="tally" id="meTally"></span>
+  </div>
+
+  <div class="hand" id="hand"></div>
+
+  <div class="row" id="controls"></div>
+  <p class="msg" id="msg">패를 골라 내세요.</p>
+</div>
+
+<script>
+/*__ENGINE__*/
+
+/*__ART__*/
+
+const $ = (id) => document.getElementById(id);
+const SEAL = { PPEOK:'뻑', JJOK:'쪽', TTADAK:'따닥', SSAKSSULI:'싹쓸이', BOMB:'폭탄' };
+const KIND_KR = { gwang:'광', yeol:'열', tti:'띠', pi:'피' };
+
+let game, seed, mode = 'play', pendingCard = null, busy = false;
+
+function newGame(s) {
+  seed = s ?? Math.floor(Math.random() * 100000);
+  game = new Engine(seed);
+  mode = 'play'; pendingCard = null; busy = false;
+  say('패를 골라 내세요.');
+  render();
+}
+
+function cardEl(c, opts = {}) {
+  const el = document.createElement('div');
+  el.className = 'card' + (opts.cls ? ' ' + opts.cls : '');
+  el.dataset.k = c.kind;
+  if (c.tti) el.dataset.t = c.tti;
+  el.innerHTML = cardArt(c);
+  return el;
+}
+
+function tally(idx) {
+  const b = baseScore(game.players[idx].captured);
+  return `<span>광 <b>${b.nGwang}</b></span><span>열 <b>${b.nYeol}</b></span>` +
+         `<span>띠 <b>${b.nTti}</b></span><span>피 <b>${b.piPoints}</b></span>`;
+}
+
+function render() {
+  $('deckN').textContent = game.deck.length;
+  $('seedN').textContent = seed;
+  $('aiPts').textContent = game.score(1);
+  $('mePts').textContent = game.score(0);
+  $('aiTally').innerHTML = tally(1);
+  $('meTally').innerHTML = tally(0);
+  $('sideMe').classList.toggle('active', game.turn === 0 && !game.finished);
+  $('sideAi').classList.toggle('active', game.turn === 1 && !game.finished);
+
+  const field = $('field');
+  field.innerHTML = '';
+  const pickMonth = mode === 'choose' ? pendingCard.month : null;
+  for (const c of game.field) {
+    const el = cardEl(c);
+    if (c.month === pickMonth) {
+      el.classList.add('pick');
+      el.tabIndex = 0;
+      el.setAttribute('role', 'button');
+      el.setAttribute('aria-label', `${c.month}월 ${c.name} 먹기`);
+      const pick = () => resolveChoice(c);
+      el.onclick = pick;
+      el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } };
+    }
+    field.appendChild(el);
+  }
+
+  const hand = $('hand');
+  hand.innerHTML = '';
+  for (const c of game.players[0].hand) {
+    const n = game.fieldMatches(c.month).length;
+    const el = cardEl(c, { cls: n ? 'hint' : '' });
+    el.tabIndex = 0;
+    el.setAttribute('role', 'button');
+    el.setAttribute('aria-label', `${c.month}월 ${c.name}${n ? `, 바닥 ${n}장` : ''}`);
+    const go = () => humanPlay(c);
+    el.onclick = go;
+    el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
+    hand.appendChild(el);
+  }
+
+  const ctl = $('controls');
+  ctl.innerHTML = '';
+  if (game.turn === 0 && !game.finished && mode === 'play' && !busy) {
+    for (const m of game.bombable()) {
+      ctl.appendChild(btn(`${m}월 폭탄`, 'hot', () => { stamp('BOMB'); after(game.bomb(m)); }));
+    }
+  }
+  ctl.appendChild(btn('새 판', '', () => newGame()));
+}
+
+function btn(label, cls, fn) {
+  const b = document.createElement('button');
+  b.textContent = label;
+  if (cls) b.className = cls;
+  b.onclick = fn;
+  return b;
+}
+
+function say(html) { $('msg').innerHTML = html; }
+
+function stamp(evt) {
+  const text = SEAL[evt];
+  if (!text) return;
+  const el = document.createElement('div');
+  el.className = 'seal';
+  el.textContent = text;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 700);
+}
+
+function describe(res, who) {
+  const bits = [];
+  if (res.played) bits.push(`${res.played.month}월 ${res.played.name}`);
+  if (res.flipped) bits.push(`뒤집기 ${res.flipped.month}월 ${res.flipped.name}`);
+  if (res.captured.length) bits.push(`<b>${res.captured.length}장</b> 획득`);
+  const seals = res.events.filter((e) => SEAL[e]).map((e) => SEAL[e]);
+  if (res.events.includes('STEAL')) seals.push('상대 피 1장');
+  return `${who} — ${bits.join(', ')}${seals.length ? ' · ' + seals.join(' ') : ''}`;
+}
+
+function humanPlay(card) {
+  if (busy || game.finished || game.turn !== 0) return;
+  if (mode === 'choose') return;
+  if (game.fieldMatches(card.month).length === 2) {
+    pendingCard = card; mode = 'choose';
+    say('바닥에 같은 월이 두 장입니다. 가져갈 패를 고르세요.');
+    render();
+    return;
+  }
+  commit(card, 0);
+}
+
+function resolveChoice(target) {
+  const m = game.fieldMatches(pendingCard.month);
+  const idx = m.findIndex((c) => c.uid === target.uid);
+  const card = pendingCard;
+  pendingCard = null; mode = 'play';
+  commit(card, idx < 0 ? 0 : idx);
+}
+
+function commit(card, choice) {
+  const res = game.play(card, choice);
+  for (const e of res.events) stamp(e);
+  say(describe(res, '나'));
+  after(res);
+}
+
+function after(res) {
+  render();
+  if (res.pendingGo) { askGo(); return; }
+  if (game.finished) { finish(); return; }
+  if (game.turn === 1) { busy = true; setTimeout(aiTurn, 750); }
+}
+
+function askGo() {
+  const ctl = $('controls');
+  ctl.innerHTML = '';
+  say(`현재 <b>${game.score(0)}점</b>. 고를 부르면 점수가 오르지만, 상대가 먼저 나면 고박입니다.`);
+  ctl.appendChild(btn('고', 'hot', () => { const r = game.declare(true); say('고!'); after(r); }));
+  ctl.appendChild(btn('스톱', 'calm', () => { const r = game.declare(false); after(r); }));
+}
+
+function aiTurn() {
+  if (game.finished) { busy = false; finish(); return; }
+  if (!game.current.hand.length) {
+    game.turn = 0;
+    if (!game.current.hand.length && !game.deck.length) game._finishDraw();
+    busy = false; render();
+    if (game.finished) finish();
+    return;
+  }
+  const [, card, ch] = chooseCard(game);
+  let res = game.play(card, ch);
+  for (const e of res.events) stamp(e);
+  say(describe(res, '상대'));
+  while (res.pendingGo) {
+    const go = chooseGo(game);
+    res = game.declare(go);
+    say(go ? '상대가 <b>고</b>를 불렀습니다.' : '상대가 <b>스톱</b>했습니다.');
+  }
+  busy = false;
+  render();
+  if (game.finished) { finish(); return; }
+  if (game.turn === 1) { busy = true; setTimeout(aiTurn, 750); }
+}
+
+function finish() {
+  const s = game.settlement;
+  const over = document.createElement('div');
+  over.className = 'over';
+  const panel = document.createElement('div');
+  panel.className = 'panel';
+
+  if (game.winner === null) {
+    panel.innerHTML = '<h2>결과</h2><div class="big">나가리</div>' +
+      '<p class="tags">양쪽 다 패가 떨어졌습니다.</p>';
+  } else {
+    const tags = [];
+    if (s.goCount) tags.push(`${s.goCount}고`);
+    if (s.gwangbak) tags.push('광박');
+    if (s.pibak) tags.push('피박');
+    if (s.meongbak) tags.push('멍박');
+    if (s.gobak) tags.push('고박');
+    if (s.shake) tags.push(`흔들기 ×${2 ** s.shake}`);
+    panel.innerHTML = `<h2>${game.winner === 0 ? '내가 이겼습니다' : '상대가 이겼습니다'}</h2>` +
+      `<div class="big">${s.total}</div>` +
+      `<p class="tags">기본 ${s.base}점${tags.length ? ' · ' + tags.join(' · ') : ''}</p>`;
+  }
+  const again = btn('한 판 더', 'calm', () => { over.remove(); newGame(); });
+  panel.appendChild(again);
+  over.appendChild(panel);
+  document.body.appendChild(over);
+  again.focus();
+}
+
+newGame();
+</script>
+</body>
+</html>
